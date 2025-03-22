@@ -1,16 +1,19 @@
 const express = require("express");
+const cors = require("cors");
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(express.json());
+app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(express.json()); // Parse JSON request bodies
 
-// Sample Route
+// Default Route
 app.get("/", (req, res) => {
-  res.send("Backend is working!");
+    res.send("Backend is running...");
 });
 
-// Start the server
+// Start Server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
