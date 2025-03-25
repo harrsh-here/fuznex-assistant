@@ -1,32 +1,36 @@
-require("dotenv").config(); // Load environment variables
-
-const express = require("express");
-const mysql = require("mysql2");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const sequelize = require('./config/database');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Database connection
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
 
-db.connect((err) => {
-  if (err) {
-    console.error("Database connection failed:", err);
-    return;
-  }
-  console.log("Connected to MySQL Database");
-});
+// Routes
+// We'll mount user routes at /api/users
+app.use('/api/users', userRoutes);
 
-// Test route
-app.get("/", (req, res) => {
-  res.send("Server is running!");
-});
+// Test DB & Sync
+sequelize.authenticate()
+  .then(() => console.log('Database connected successfully!'))
+  .catch(err => console.error('Database connection failed:', err));
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+sequelize.sync()
+  .then(() => {
+    console.log('Database synchronized!');
+    app.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => console.error('Database sync failed:', err));
+
+// Default Route
+app.get('/', (req, res) => {
+  res.send('FuzNex Assistant Backend is Running!');
 });
