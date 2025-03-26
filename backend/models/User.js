@@ -4,8 +4,8 @@ const sequelize = require('../config/database');
 const User = sequelize.define('user_details', {
   user_id: {
     type: DataTypes.INTEGER,
-    autoIncrement: true,
     primaryKey: true,
+    autoIncrement: true,
   },
   name: {
     type: DataTypes.STRING,
@@ -24,13 +24,18 @@ const User = sequelize.define('user_details', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  role: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'user',  // Default role for new users
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
-  },
+  }
 }, {
-  tableName: 'user_details', // Name of the DB table
-  timestamps: false,         // We already have created_at
+  tableName: 'user_details',
+  timestamps: false,
 });
 
 module.exports = User;

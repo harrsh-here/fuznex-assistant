@@ -7,8 +7,9 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.post('/register', userController.createUser);
 router.post('/login', userController.loginUser);
 
-// Protected Routes
+// Protected Routes (JWT required)
 router.get('/', authMiddleware, userController.getUsers);
+router.get('/profile', authMiddleware, userController.getMyProfile);
 router.get('/:id', authMiddleware, userController.getUserById);
 router.put('/:id', authMiddleware, userController.updateUser);
 router.delete('/:id', authMiddleware, userController.deleteUser);

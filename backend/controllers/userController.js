@@ -3,16 +3,33 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-// Generate JWT Token
+// Generate JWT Token using user_id and role
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, email: user.email },
+    { id: user.user_id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: '1h' } // Token valid for 1 hour
+    { expiresIn: '1h' }
   );
 };
 
 // Create a new user (Register)
+const disposableDomains = [
+  "tempmail.com", "10minutemail.com", "guerrillamail.com", "mailinator.com"
+];
+
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) return false;
+
+  const domain = email.split('@')[1];
+  return !disposableDomains.includes(domain.toLowerCase());
+};
+
+const isValidPhone = (phone_number) => {
+  const phoneRegex = /^[0-9]{10,15}$/; // Adjust based on country rules
+  return phoneRegex.test(phone_number);
+};
+
 exports.createUser = async (req, res) => {
   try {
     const { name, email, phone_number, password } = req.body;
@@ -22,10 +39,26 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
+    // Validate email format and block temporary emails
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid or temporary email address.' });
+    }
+
+    // Validate phone number format
+    if (!isValidPhone(phone_number)) {
+      return res.status(400).json({ error: 'Invalid phone number format.' });
+    }
+
+    // Check if email already exists
+    const existingUserByEmail = await User.findOne({ where: { email } });
+    if (existingUserByEmail) {
       return res.status(400).json({ error: 'Email already registered.' });
+    }
+
+    // Check if phone number already exists
+    const existingUserByPhone = await User.findOne({ where: { phone_number } });
+    if (existingUserByPhone) {
+      return res.status(400).json({ error: 'Phone number already registered.' });
     }
 
     // Hash the password
@@ -54,6 +87,7 @@ exports.createUser = async (req, res) => {
   }
 };
 
+
 // Login user
 exports.loginUser = async (req, res) => {
   try {
@@ -78,7 +112,7 @@ exports.loginUser = async (req, res) => {
     const userData = user.toJSON();
     delete userData.password;
 
-    // Generate JWT
+    // Generate JWT token using user_id and role
     const token = generateToken(user);
 
     res.json({ message: 'Login successful', user: userData, token });
@@ -88,9 +122,13 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// Get all users (Protected)
+// Get all users (Protected - Admin only)
 exports.getUsers = async (req, res) => {
   try {
+    // Only allow admins to get all users
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied. Admins only.' });
+    }
     const users = await User.findAll();
     const sanitized = users.map(u => {
       const userObj = u.toJSON();
@@ -104,9 +142,31 @@ exports.getUsers = async (req, res) => {
   }
 };
 
+// Get my profile (Protected - returns only the logged-in user's data)
+exports.getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id); // Assumes req.user.id is set by auth middleware
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const userData = user.toJSON();
+    delete userData.password;
+    res.json(userData);
+  } catch (error) {
+    console.error('Error getting profile:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 // Get user by ID (Protected)
 exports.getUserById = async (req, res) => {
   try {
+    // Authorization check:
+    // Allow access only if the logged-in user is admin OR is requesting their own profile.
+    if (parseInt(req.params.id) !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied. You can only view your own profile.' });
+    }
+
     const user = await User.findByPk(req.params.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -120,9 +180,15 @@ exports.getUserById = async (req, res) => {
   }
 };
 
+
 // Update user (Protected)
 exports.updateUser = async (req, res) => {
   try {
+    // Authorization check: Only allow a user to update their own account.
+    if (parseInt(req.params.id) !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. You can only update your own account.' });
+    }
+
     const user = await User.findByPk(req.params.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -135,7 +201,6 @@ exports.updateUser = async (req, res) => {
     await user.update(req.body);
     const updatedUser = user.toJSON();
     delete updatedUser.password;
-
     res.json({ message: 'User updated successfully', user: updatedUser });
   } catch (error) {
     console.error('Error updating user:', error);
@@ -146,6 +211,11 @@ exports.updateUser = async (req, res) => {
 // Delete user (Protected)
 exports.deleteUser = async (req, res) => {
   try {
+    // Authorization check: Only allow a user to delete their own account.
+    if (parseInt(req.params.id) !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied. You can only delete your own account.' });
+    }
+
     const user = await User.findByPk(req.params.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
