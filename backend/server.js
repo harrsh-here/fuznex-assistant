@@ -6,6 +6,7 @@ const sequelize = require('./config/database');
 
 const userRoutes = require('./routes/userRoutes');
 const alarmsRoutes = require('./routes/alarms');
+const todoRoutes = require('./routes/todoRoutes'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +18,7 @@ app.use(bodyParser.json());
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/alarms', alarmsRoutes);
+app.use('/api/todos', todoRoutes);
 
 // Default Route
 app.get('/', (req, res) => {
