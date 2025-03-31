@@ -1,6 +1,6 @@
 const TodoTask = require('../models/TodoTask');
-// If needed, you can later add external integration services here.
-// const externalIntegration = require('../services/externalIntegration');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 // Create a new task
 exports.createTodo = async (req, res) => {
@@ -17,7 +17,8 @@ exports.createTodo = async (req, res) => {
       is_archived,
       external_id
     } = req.body;
-    const user_id = req.user.id;
+    
+    const user_id = req.user.id; // Make sure req.user is set via authMiddleware
 
     if (!title) {
       return res.status(400).json({ error: 'Title is required.' });
@@ -37,13 +38,6 @@ exports.createTodo = async (req, res) => {
       is_archived: is_archived || false,
       external_id: external_id || null
     });
-
-    // Optionally, sync with external service:
-    // if (userHasLinkedExternalAccount && !external_id) {
-    //   const externalTask = await externalIntegration.syncTask(newTask);
-    //   newTask.external_id = externalTask.id;
-    //   await newTask.save();
-    // }
 
     res.status(201).json({ message: 'Task created successfully.', task: newTask });
   } catch (error) {
@@ -67,8 +61,12 @@ exports.getTodos = async (req, res) => {
 exports.getTodoById = async (req, res) => {
   try {
     const task = await TodoTask.findByPk(req.params.id);
-    if (!task) return res.status(404).json({ error: "Task not found" });
-    if (task.user_id !== req.user.id) return res.status(403).json({ error: "Access denied" });
+    if (!task) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+    if (task.user_id !== req.user.id) {
+      return res.status(403).json({ error: "Access denied" });
+    }
     res.status(200).json(task);
   } catch (error) {
     console.error("Error in getTodoById:", error);
@@ -80,14 +78,14 @@ exports.getTodoById = async (req, res) => {
 exports.updateTodo = async (req, res) => {
   try {
     const task = await TodoTask.findByPk(req.params.id);
-    if (!task) return res.status(404).json({ error: "Task not found" });
-    if (task.user_id !== req.user.id) return res.status(403).json({ error: "Access denied" });
+    if (!task) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+    if (task.user_id !== req.user.id) {
+      return res.status(403).json({ error: "Access denied" });
+    }
 
     await task.update(req.body);
-
-    // Optionally, sync update with external service:
-    // if (task.external_id) await externalIntegration.syncTaskUpdate(task);
-
     res.status(200).json({ message: "Task updated successfully.", task });
   } catch (error) {
     console.error("Error in updateTodo:", error);
@@ -99,11 +97,13 @@ exports.updateTodo = async (req, res) => {
 exports.deleteTodo = async (req, res) => {
   try {
     const task = await TodoTask.findByPk(req.params.id);
-    if (!task) return res.status(404).json({ error: "Task not found" });
-    if (task.user_id !== req.user.id) return res.status(403).json({ error: "Access denied" });
-    
+    if (!task) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+    if (task.user_id !== req.user.id) {
+      return res.status(403).json({ error: "Access denied" });
+    }
     await task.destroy();
-
     res.status(204).send();
   } catch (error) {
     console.error("Error in deleteTodo:", error);

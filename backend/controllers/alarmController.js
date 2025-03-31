@@ -128,7 +128,7 @@ exports.getAlarmById = async (req, res) => {
       return res.status(404).json({ error: 'Alarm not found.' });
     }
     if (alarm.user_id !== req.user.id) {
-      return res.status(403).json({ error: 'Access denied. Not your alarm.' });
+      return res.status(403).json({ error: 'Access denied. .' });
     }
     res.status(200).json(alarm);
   } catch (error) {
