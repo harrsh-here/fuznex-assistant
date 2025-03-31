@@ -3,13 +3,45 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-// Generate JWT Token using user_id and role
+// Generate JWT Token using id and role
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.user_id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );
+};
+
+// Generate Refresh Token using id and role
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    process.env.REFRESH_SECRET,
+    { expiresIn: '7d' }
+  );
+};
+
+// Refresh Token Endpoint - accepts refreshToken and issues a new access token
+exports.refreshToken = (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'Refresh token is required.' });
+  }
+  
+  jwt.verify(refreshToken, process.env.REFRESH_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid refresh token.' });
+    }
+    
+    // Optionally, you can look up the user in your DB to verify existence
+    const newAccessToken = jwt.sign(
+      { id: decoded.id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    
+    res.json({ accessToken: newAccessToken });
+  });
 };
 
 // Create a new user (Register)
@@ -77,16 +109,16 @@ exports.createUser = async (req, res) => {
     const userData = newUser.toJSON();
     delete userData.password;
 
-    // Generate JWT token
+    // Generate JWT token and Refresh Token
     const token = generateToken(newUser);
+    const refreshToken = generateRefreshToken(newUser);
 
-    res.status(201).json({ message: 'User created successfully', user: userData, token });
+    res.status(201).json({ message: 'User created successfully', user: userData, token, refreshToken });
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
 
 // Login user
 exports.loginUser = async (req, res) => {
@@ -112,10 +144,11 @@ exports.loginUser = async (req, res) => {
     const userData = user.toJSON();
     delete userData.password;
 
-    // Generate JWT token using user_id and role
+    // Generate JWT token and Refresh Token
     const token = generateToken(user);
-
-    res.json({ message: 'Login successful', user: userData, token });
+    const refreshToken = generateRefreshToken(user);
+    
+    res.json({ message: 'Login successful', user: userData, token, refreshToken });
   } catch (error) {
     console.error('Error logging in:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -179,7 +212,6 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
 
 // Update user (Protected)
 exports.updateUser = async (req, res) => {
