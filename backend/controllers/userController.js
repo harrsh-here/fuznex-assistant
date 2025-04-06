@@ -6,7 +6,7 @@ require('dotenv').config();
 // Generate JWT Token using id and role
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.user_id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );
@@ -15,7 +15,7 @@ const generateToken = (user) => {
 // Generate Refresh Token using id and role
 const generateRefreshToken = (user) => {
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.user_id, email: user.email, role: user.role },
     process.env.REFRESH_SECRET,
     { expiresIn: '7d' }
   );
@@ -33,12 +33,7 @@ exports.refreshToken = (req, res) => {
       return res.status(403).json({ error: 'Invalid refresh token.' });
     }
     
-    // Optionally, you can look up the user in your DB to verify existence
-    const newAccessToken = jwt.sign(
-      { id: decoded.id },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    
     
     res.json({ accessToken: newAccessToken });
   });
