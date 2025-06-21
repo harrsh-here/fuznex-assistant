@@ -1,0 +1,40 @@
+import React, { useState } from "react";
+import AppShell from "./components/AppShell";
+import HomeScreen from "./features/Home/HomeScreen";
+import TasksScreen from "./features/Tasks/TasksScreen";
+import FitnessScreen from "./features/Fitness/FitnessScreen";
+import HistoryScreen from "./features/History/HistoryScreen";
+import ProfileScreen from "./features/Profile/ProfileScreen";
+
+export default function App() {
+  const [activePath, setActivePath] = useState("home");
+
+  const renderScreen = () => {
+    switch (activePath) {
+      case "tasks":
+        return <TasksScreen />;
+      case "fitness":
+        return <FitnessScreen />;
+      case "history":
+        return <HistoryScreen />;
+      case "profile":
+        return <ProfileScreen />;
+      default:
+        return <HomeScreen />;
+    }
+  };
+
+  return (
+    <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
+      <div className="w-[375px] h-[812px] border-[14px] border-black rounded-[50px] shadow-2xl overflow-hidden relative bg-black">
+        {/* Notch */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-2xl z-10" />
+
+        {/* Inner AppShell */}
+        <AppShell activePath={activePath} onNavigate={setActivePath}>
+          {renderScreen()}
+        </AppShell>
+      </div>
+    </div>
+  );
+}
