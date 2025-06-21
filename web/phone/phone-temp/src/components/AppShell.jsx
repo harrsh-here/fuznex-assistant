@@ -1,43 +1,42 @@
-import React from 'react';
+// src/components/AppShell.jsx
+import React from "react";
+import {
+  Home,
+  CheckSquare,
+  Dumbbell,
+  History,
+  User,
+} from "lucide-react";
 
-export default function AppShell({ children, activePath, onNavigate }) {
-  const tabs = [
-    { path: '/', icon: '🏠', label: 'Home' },
-    { path: '/tasks', icon: '📅', label: 'Tasks' },
-    { path: '/fitness', icon: '💪', label: 'Fitness' },
-    { path: '/history', icon: '⏳', label: 'History' },
-    { path: '/profile', icon: '👤', label: 'Profile' },
-  ];
+const tabs = [
+  { path: "home", icon: Home, label: "Home" },
+  { path: "tasks", icon: CheckSquare, label: "Tasks" },
+  { path: "fitness", icon: Dumbbell, label: "Fitness" },
+  { path: "history", icon: History, label: "History" },
+  { path: "profile", icon: User, label: "Profile" },
+];
 
+export default function AppShell({ activePath, onNavigate, children }) {
   return (
-    <div className="flex items-center justify-center w-screen h-screen bg-gray-100">
-      <div className="w-[375px] h-[812px] mx-auto mt-8 border-[14px] border-black rounded-[50px] shadow-2xl overflow-hidden relative bg-white">
-        {/* Notch */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-2xl z-10"></div>
+    <div className="flex flex-col h-full w-full bg-gradient-to-br from-[#0f0f0f] via-[#181818] to-[#0b0b0b] text-white">
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">{children}</div>
 
-        {/* Screen Content */}
-        <div className="flex flex-col h-full pt-8 pb-16 px-4">
-          {children}
-        </div>
-
-        {/* Bottom Navigation */}
-        <div className="absolute bottom-0 left-0 w-full bg-white border-t px-4 py-2 flex justify-between">
-          {tabs.map(({ path, icon, label }) => {
-            const isActive = activePath === path;
-            return (
-              <button
-                key={path}
-                onClick={() => onNavigate(path)}
-                className={`flex flex-col items-center text-xs ${isActive ? 'text-blue-500' : 'text-gray-600'}`}
-              >
-                <span className="text-xl">{icon}</span>
-                <span className="mt-1">{label}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Bottom Navigation */}
+      <div className="w-full border-t border-[#2a2a2a] bg-[#101010] px-4 py-2 flex justify-between text-gray-400">
+        {tabs.map((tab) => (
+          <button
+            key={tab.path}
+            onClick={() => onNavigate(tab.path)}
+            className={`flex flex-col items-center text-xs ${
+              activePath === tab.path ? "text-purple-400" : "text-gray-400"
+            }`}
+          >
+            <tab.icon className="w-5 h-5 mb-1" />
+            {tab.label}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
-
