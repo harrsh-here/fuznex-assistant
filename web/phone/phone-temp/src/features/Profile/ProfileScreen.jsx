@@ -2,14 +2,28 @@
 import React from "react";
 
 export default function ProfileScreen() {
+  const mockUser = {
+    name: "Harsh Patidar",
+    email: "harsh@example.com",
+    avatar_url: "/profile-pictures/pfp3.png", // now using .png
+  };
+
   return (
     <div className="flex flex-col h-full px-5 py-6 pt-12 text-white">
       {/* User Info */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="w-14 h-14 bg-gray-600 rounded-full" />
+        <img
+          src={mockUser.avatar_url}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "/profile-pictures/default-avatar.png"; // fallback
+          }}
+          alt="Profile"
+          className="w-14 h-14 rounded-full object-cover border border-gray-500"
+        />
         <div>
-          <div className="text-lg font-semibold">Harsh Patidar</div>
-          <div className="text-xs text-gray-400">harsh@example.com</div>
+          <div className="text-lg font-semibold">{mockUser.name}</div>
+          <div className="text-xs text-gray-400">{mockUser.email}</div>
         </div>
       </div>
 
@@ -37,7 +51,7 @@ export default function ProfileScreen() {
         </div>
       </div>
 
-      {/* Logout / Settings */}
+      {/* Logout */}
       <button className="mt-6 w-full py-2 bg-red-600 hover:bg-red-700 rounded-xl shadow transition">
         Logout
       </button>
