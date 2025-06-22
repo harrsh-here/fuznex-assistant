@@ -1,4 +1,3 @@
-// src/components/AppShell.jsx
 import React from "react";
 import {
   Home,
@@ -22,17 +21,17 @@ export default function AppShell({ activePath, onNavigate, children }) {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">{children}</div>
 
-      {/* Bottom Navigation */}
-      <div className="w-full border-t border-[#2a2a2a] bg-[#101010] px-4 py-2 flex justify-between text-gray-400">
+      {/* Bottom Navigation (non-floating) */}
+      <div className="w-full border-t border-[#2a2a2a] bg-[#101010] px-4 py-2 flex justify-around items-center text-gray-400">
         {tabs.map((tab) => (
           <button
             key={tab.path}
             onClick={() => onNavigate(tab.path)}
-            className={`flex flex-col items-center text-xs ${
-              activePath === tab.path ? "text-purple-400" : "text-gray-400"
+            className={`flex flex-col items-center text-[11px] transition-all duration-200 ${
+              activePath === tab.path ? "text-purple-500" : "text-gray-400"
             }`}
           >
-            <tab.icon className="w-5 h-5 mb-1" />
+            <tab.icon className="w-5 h-5 mb-0.5" />
             {tab.label}
           </button>
         ))}

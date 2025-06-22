@@ -1,13 +1,26 @@
 import React, { useState } from "react";
 import AppShell from "./components/AppShell";
+
 import HomeScreen from "./features/Home/HomeScreen";
 import TasksScreen from "./features/Tasks/TasksScreen";
 import FitnessScreen from "./features/Fitness/FitnessScreen";
 import HistoryScreen from "./features/History/HistoryScreen";
 import ProfileScreen from "./features/Profile/ProfileScreen";
+import LoginSignupScreen from "./features/Auth/LoginSignupScreen";
 
 export default function App() {
   const [activePath, setActivePath] = useState("home");
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Toggle for testing auth
+
+  const handleLogin = (credentials) => {
+    console.log("Logging in:", credentials);
+    setIsAuthenticated(true);
+  };
+
+  const handleRegister = (credentials) => {
+    console.log("Registering:", credentials);
+    setIsAuthenticated(true);
+  };
 
   const renderScreen = () => {
     switch (activePath) {
@@ -30,10 +43,14 @@ export default function App() {
         {/* Notch */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-2xl z-10" />
 
-        {/* Inner AppShell */}
-        <AppShell activePath={activePath} onNavigate={setActivePath}>
-          {renderScreen()}
-        </AppShell>
+        {/* Auth or Main App */}
+        {!isAuthenticated ? (
+          <LoginSignupScreen onLogin={handleLogin} onRegister={handleRegister} />
+        ) : (
+          <AppShell activePath={activePath} onNavigate={setActivePath}>
+            {renderScreen()}
+          </AppShell>
+        )}
       </div>
     </div>
   );
