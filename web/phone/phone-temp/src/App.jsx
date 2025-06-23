@@ -8,9 +8,10 @@ import HistoryScreen from "./features/History/HistoryScreen";
 import ProfileScreen from "./features/Profile/ProfileScreen";
 import LoginSignupScreen from "./features/Auth/LoginSignupScreen";
 
+
 export default function App() {
   const [activePath, setActivePath] = useState("home");
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Toggle for testing auth
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Toggle for testing auth
 
   const handleLogin = (credentials) => {
     console.log("Logging in:", credentials);
