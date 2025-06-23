@@ -7,6 +7,9 @@ import FitnessScreen from "./features/Fitness/FitnessScreen";
 import HistoryScreen from "./features/History/HistoryScreen";
 import ProfileScreen from "./features/Profile/ProfileScreen";
 import LoginSignupScreen from "./features/Auth/LoginSignupScreen";
+import ChatScreen from "./features/Home/ChatScreen";
+import NotificationsScreen from "./features/Notifications/NotificationsScreen";
+
 
 
 export default function App() {
@@ -26,19 +29,28 @@ export default function App() {
   const renderScreen = () => {
     switch (activePath) {
       case "tasks":
-        return <TasksScreen />;
-      case "fitness":
+        return <TasksScreen />;  
+          case "chat":
+      return <ChatScreen />;
+        case "home":
+        return <HomeScreen onNavigate={setActivePath} />
+        case "fitness":
+     
         return <FitnessScreen />;
       case "history":
         return <HistoryScreen />;
       case "profile":
         return <ProfileScreen />;
+      case "notifications":
+  return <NotificationsScreen onNavigate={setActivePath} />;
+  
       default:
-        return <HomeScreen />;
+        return <HomeScreen onNavigate={setActivePath} />;
     }
   };
 
   return (
+    
     <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
       <div className="w-[375px] h-[812px] border-[14px] border-black rounded-[50px] shadow-2xl overflow-hidden relative bg-black">
         {/* Notch */}
@@ -51,6 +63,7 @@ export default function App() {
           <AppShell activePath={activePath} onNavigate={setActivePath}>
             {renderScreen()}
           </AppShell>
+          
         )}
       </div>
     </div>

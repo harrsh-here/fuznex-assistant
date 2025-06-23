@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function NotificationScreen({ onBack }) {
+export default function NotificationScreen({ onNavigate }) {
   const [notifications, setNotifications] = useState([
     "🔔 Reminder: Meeting at 3 PM",
     "📱 Push: Battery low on WearOS device",
@@ -12,7 +12,7 @@ export default function NotificationScreen({ onBack }) {
       {/* Header with Back Button */}
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={onBack}
+          onClick={() => onNavigate("home")}
           className="text-purple-400 hover:text-white transition"
         >
           ← Back

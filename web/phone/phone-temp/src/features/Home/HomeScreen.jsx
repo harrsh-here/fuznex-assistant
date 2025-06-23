@@ -36,6 +36,7 @@ export default function HomeScreen({ onNavigate }) {
   const handleClose = () => setExpandedText(null);
 
   const handleSend = () => {
+    
     if (!inputText.trim()) return;
     const txt = inputText.toLowerCase();
 
@@ -55,6 +56,7 @@ export default function HomeScreen({ onNavigate }) {
         </em>
       );
     } else if (txt.includes("poem")) {
+      onNavigate("chat");
       setResponseText(
         <em className="whitespace-pre-line">
           {`Ye duniya, ye log, ye rishte,
