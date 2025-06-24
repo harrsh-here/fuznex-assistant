@@ -27,7 +27,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         const { data } = await axios.post(
-          (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api') + '/users/refresh',
+          (import.meta.env.VITE_API_BASE_URL || 'https://fuznex.onrender.com/api') + '/users/refresh',
           { refreshToken }
         );
         localStorage.setItem('token', data.accessToken);
