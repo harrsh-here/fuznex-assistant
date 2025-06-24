@@ -1,6 +1,7 @@
 // src/api/api.js
 import axios from 'axios';
 
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://fuznex.onrender.com/api';
 
 const api = axios.create({
@@ -29,10 +30,15 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refreshToken');
         const { data } = await axios.post(`${BASE_URL}/users/refresh`, { refreshToken });
 
+
         localStorage.setItem('token', data.accessToken);
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
+
+
+        // Refresh failed, clear storage and redirect to login
+
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         window.location.reload();
