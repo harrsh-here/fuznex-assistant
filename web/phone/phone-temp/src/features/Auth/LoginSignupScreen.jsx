@@ -14,7 +14,9 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const handleGoogleLogin = () => {
+  window.location.href = 'https://fuznex.onrender.com/api/auth/google';
+};
   const submit = async () => {
     setLoading(true);
     setError("");
@@ -148,7 +150,7 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
 
         {/* OAuth */}
         <div className="space-y-3">
-          <button onClick={() => onLogin({ oauth: 'google' })} className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium">
+          <button onClick={handleGoogleLogin} className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium">
             <GoogleLogo size={22} /> Continue with Google
           </button>
           <button onClick={() => onLogin({ oauth: 'microsoft' })} className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium">

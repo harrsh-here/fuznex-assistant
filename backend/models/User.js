@@ -18,20 +18,38 @@ const User = sequelize.define('user_details', {
   },
   phone_number: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true, // optional for Google login
   },
   password: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true, // nullable for Google login
   },
   role: {
     type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: 'user',  // Default role for new users
+    defaultValue: 'user',
   },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
+  },
+  provider: {
+    type: DataTypes.ENUM('local', 'google', 'microsoft'),
+    allowNull: false,
+    defaultValue: 'local',
+  },
+  provider_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  },
+  oauth_access_token: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  oauth_refresh_token: {
+    type: DataTypes.STRING,
+    allowNull: true,
   }
 }, {
   tableName: 'user_details',

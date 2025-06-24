@@ -10,7 +10,7 @@ const todoRoutes = require('./routes/todoRoutes');
 const userHistoryRoutes = require('./routes/userHistoryRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const subtaskRoutes = require('./routes/subtaskRoutes');
-
+const googleAuthRoutes = require('./routes/googleAuth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +26,7 @@ app.use('/api/todos', todoRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/subtasks', subtaskRoutes);
 app.use('/api/history', userHistoryRoutes);
+app.use('/api/auth', googleAuthRoutes);
 
 
 // Default Route
