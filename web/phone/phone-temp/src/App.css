@@ -41,3 +41,11 @@
 .read-the-docs {
   color: #888;
 }
+/* Add in your global CSS or Tailwind config:*/
+.animate-loading {
+  animation: loading-bar 1s linear infinite;
+}
+@keyframes loading-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

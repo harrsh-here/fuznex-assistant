@@ -1,31 +1,41 @@
 // src/features/Profile/ProfileScreen.jsx
 import React from "react";
+import { Gear } from "phosphor-react"; // or any other icon library you're using
 
-export default function ProfileScreen() {
-  const mockUser = {
-    name: "Harsh Patidar",
-    email: "harsh@example.com",
-    avatar_url: "/profile-pictures/pfp3.png", // now using .png
-  };
+export default function ProfileScreen({ user, onLogout, onEditProfile }) {
+  const { name, email, avatar_url } = user || {};
 
   return (
     <div className="flex flex-col h-full px-5 py-6 pt-12 text-white">
       {/* User Info */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-2">
         <img
-          src={mockUser.avatar_url}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "/profile-pictures/default-avatar.png"; // fallback
-          }}
+          src={avatar_url || "/profile-pictures/default-avatar.png"}
           alt="Profile"
-          className="w-14 h-14 rounded-full object-cover border border-gray-500"
+          className="w-16 h-16 rounded-full object-cover border border-gray-600"
         />
-        <div>
-          <div className="text-lg font-semibold">{mockUser.name}</div>
-          <div className="text-xs text-gray-400">{mockUser.email}</div>
+        <div className="flex-1">
+          <div className="text-lg font-semibold">{name || "Unknown User"}</div>
+          <div className="text-sm text-gray-400">{email || "no-email@example.com"}</div>
         </div>
       </div>
+
+    {/* Edit Profile & Settings */}
+<div className="flex justify-between items-center mb-4">
+  <button
+    onClick={onEditProfile}
+    className="text-xs text-purple-400 underline"
+  >
+    Edit Profile
+  </button>
+  <button
+    onClick={() => console.log("Settings clicked")}
+    className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition"
+  >
+    <Gear size={16} />
+    Settings
+  </button>
+</div>
 
       {/* Assistant Selection */}
       <div className="mb-6">
@@ -52,7 +62,10 @@ export default function ProfileScreen() {
       </div>
 
       {/* Logout */}
-      <button className="mt-6 w-full py-2 bg-red-600 hover:bg-red-700 rounded-xl shadow transition">
+      <button
+        onClick={onLogout}
+        className="mt-6 w-full py-2 bg-red-600 hover:bg-red-700 rounded-xl transition"
+      >
         Logout
       </button>
     </div>

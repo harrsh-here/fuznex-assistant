@@ -8,6 +8,8 @@ const userRoutes = require('./routes/userRoutes');
 const alarmsRoutes = require('./routes/alarms');
 const todoRoutes = require('./routes/todoRoutes'); 
 const userHistoryRoutes = require('./routes/userHistoryRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const subtaskRoutes = require('./routes/subtaskRoutes');
 
 
 const app = express();
@@ -21,7 +23,8 @@ app.use(bodyParser.json());
 app.use('/api/users', userRoutes);
 app.use('/api/alarms', alarmsRoutes);
 app.use('/api/todos', todoRoutes);
-
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/subtasks', subtaskRoutes);
 app.use('/api/history', userHistoryRoutes);
 
 
