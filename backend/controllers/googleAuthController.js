@@ -70,4 +70,12 @@ exports.googleCallback = async (req, res) => {
   const refreshToken = jwt.sign({ id: user.user_id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
   res.json({ message: 'Google login successful', accessToken, refreshToken, user });
+// Build a URL back to your SPA
+const redirectTo = new URL(process.env.FRONTEND_URL);
+redirectTo.pathname = '/auth/success';      // frontend route to catch tokens
+redirectTo.searchParams.set('accessToken', accessToken);
+redirectTo.searchParams.set('refreshToken', refreshToken);
+
+// Redirect the browser there
+return res.redirect(redirectTo.toString());
 };
