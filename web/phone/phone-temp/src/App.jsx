@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useEffect } from "react";
 import api from "./api/api";
 import AppShell from "./components/AppShell";
@@ -6,20 +5,41 @@ import HomeScreen from "./features/Home/HomeScreen";
 import TasksScreen from "./features/Tasks/TasksScreen";
 import FitnessScreen from "./features/Fitness/FitnessScreen";
 import HistoryScreen from "./features/History/HistoryScreen";
-import ProfileScreen from "./features/Profile/ProfileScreen";
-import LoginSignupScreen from "./features/Auth/LoginSignupScreen";
 import ChatScreen from "./features/Home/ChatScreen";
 import NotificationsScreen from "./features/Notifications/NotificationsScreen";
+import ProfileScreen from "./features/Profile/ProfileScreen";
 import EditProfileScreen from "./features/Profile/EditProfileScreen";
+import LoginSignupScreen from "./features/Auth/LoginSignupScreen";
+import AuthSuccess from "./features/Auth/AuthSuccess";
 
 export default function App() {
+  // Single state declarations
   const [activePath, setActivePath] = useState("home");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authTransition, setAuthTransition] = useState(false);
 
+  // On mount, handle OAuth redirect or normal auth check
   useEffect(() => {
+    if (window.location.pathname === '/auth/success') {
+      const params = new URLSearchParams(window.location.search);
+      const accessToken = params.get('accessToken');
+      const refreshToken = params.get('refreshToken');
+      if (accessToken) {
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        api.get('/users/profile')
+          .then(({ data }) => {
+            setUser(data);
+            setIsAuthenticated(true);
+            setActivePath('home');
+          })
+          .catch(() => {})
+          .finally(() => setCheckingAuth(false));
+        return;
+      }
+    }
     const token = localStorage.getItem("token");
     if (!token) {
       setCheckingAuth(false);
@@ -37,6 +57,8 @@ export default function App() {
       })
       .finally(() => setCheckingAuth(false));
   }, []);
+
+  const navigateTo = (path) => setActivePath(path);
 
   const handleLogin = (userData) => {
     setAuthTransition(true);
@@ -82,14 +104,10 @@ export default function App() {
     }
   };
 
-  const navigateTo = (path) => {
-    setActivePath(path);
-  };
-
   if (checkingAuth || authTransition) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
-        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -101,7 +119,7 @@ export default function App() {
         {!isAuthenticated ? (
           <LoginSignupScreen onLogin={handleLogin} onRegister={handleRegister} />
         ) : (
-          <AppShell activePath={activePath} onNavigate={navigateTo}>
+          <AppShell activePath={activePath} onNavigate={navigateTo} onLogout={handleLogout}>
             {renderScreen()}
           </AppShell>
         )}

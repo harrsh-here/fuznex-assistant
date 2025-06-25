@@ -46,14 +46,10 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
 
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center font-sans px-4 py-8"
-      style={{
-        backgroundImage: `url(${bgImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      className="absolute inset-0 bg-[#101010] flex items-center justify-center font-sans px-4 py-8"
+      
     >
-     <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg bg-transparent backdrop-blur-xl border border-purple-500 rounded-3xl p-6 xs:p-5 space-y-1 shadow-0xl">
+     <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg bg-transparent backdrop-blur-xl border border-purple-500 rounded-3xl p-6 xs:p-5 space-y-3 shadow-0xl">
 
         {/* Notch */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-1 bg-purple-500 rounded-b-md" />
@@ -152,9 +148,7 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
         <div className="space-y-3">
           <button onClick={handleGoogleLogin} className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium">
             <GoogleLogo size={22} /> Continue with Google
-          </button>
-          <button onClick={() => onLogin({ oauth: 'microsoft' })} className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium">
-            <WindowsLogo size={22} /> Continue with Microsoft
+         
           </button>
         </div>
 

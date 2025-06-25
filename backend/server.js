@@ -27,6 +27,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/subtasks', subtaskRoutes);
 app.use('/api/history', userHistoryRoutes);
 app.use('/api/auth', googleAuthRoutes);
+app.use('/api/auth', require('./routes/googleAuth'));
 
 
 // Default Route
