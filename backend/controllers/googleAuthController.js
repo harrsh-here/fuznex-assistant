@@ -10,25 +10,16 @@ function generateRandomString(len = 16) {
 }
 
 let googleClient = null;
-
 async function getGoogleClient() {
   if (googleClient) return googleClient;
-
-  // 👇 Dynamically import the ESM-only module right here:
-  const clientModule = await import('openid-client');
-const Issuer = clientModule.default?.Issuer || clientModule.Issuer;
-
-
-  // Now Issuer is defined, so this will work:
+  const { Issuer } = await import('openid-client');
   const googleIssuer = await Issuer.discover('https://accounts.google.com');
-
   googleClient = new googleIssuer.Client({
     client_id:     process.env.GOOGLE_CLIENT_ID,
     client_secret: process.env.GOOGLE_CLIENT_SECRET,
     redirect_uris: [process.env.GOOGLE_CALLBACK_URL],
     response_types:['code'],
   });
-
   return googleClient;
 }
 
@@ -42,7 +33,6 @@ exports.googleLogin = async (req, res) => {
     state,
     nonce,
   });
-
   res.redirect(authUrl);
 };
 
@@ -69,13 +59,11 @@ exports.googleCallback = async (req, res) => {
   const accessToken  = jwt.sign({ id: user.user_id }, process.env.JWT_SECRET,         { expiresIn: '1h' });
   const refreshToken = jwt.sign({ id: user.user_id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
-  res.json({ message: 'Google login successful', accessToken, refreshToken, user });
-// Build a URL back to your SPA
-const redirectTo = new URL(process.env.FRONTEND_URL);
-redirectTo.pathname = '/auth/success';      // frontend route to catch tokens
-redirectTo.searchParams.set('accessToken', accessToken);
-redirectTo.searchParams.set('refreshToken', refreshToken);
+  // Redirect back into your React app
+  const redirectTo = new URL(process.env.FRONTEND_URL);
+  redirectTo.pathname = '/auth/success';
+  redirectTo.searchParams.set('accessToken',  accessToken);
+  redirectTo.searchParams.set('refreshToken', refreshToken);
 
-// Redirect the browser there
-return res.redirect(redirectTo.toString());
+  return res.redirect(redirectTo.toString());
 };
