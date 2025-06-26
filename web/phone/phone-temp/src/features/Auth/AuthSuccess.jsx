@@ -1,5 +1,4 @@
-// src/features/Auth/AuthSuccess.jsx
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/api';
 
@@ -9,37 +8,27 @@ export default function AuthSuccess({ onAuth }) {
 
   useEffect(() => {
     const params = new URLSearchParams(search);
-    const accessToken  = params.get('accessToken');
+    const accessToken = params.get('accessToken');
     const refreshToken = params.get('refreshToken');
 
-    if (!accessToken || !refreshToken) {
+    if (!accessToken) {
       return nav('/login?error=oauth');
     }
 
-    // store tokens
+    // Store tokens
     localStorage.setItem('token', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
 
-    // remove query params from URL
-    window.history.replaceState({}, document.title, window.location.pathname);
-
-    // fetch profile and finish login
+    // Fetch user profile to complete login
     api.get('/users/profile')
       .then(({ data }) => {
         onAuth(data);
-        nav('/', { replace: true });
+        nav('/', { replace: true }); // redirect to home
       })
       .catch(() => {
         nav('/login?error=auth');
       });
   }, [search, nav, onAuth]);
 
-  return (
-    <div className="w-screen h-screen flex items-center justify-center bg-gray-900 text-white">
-      <div className="text-center">
-        <p className="text-xl mb-2">Logging you in…</p>
-        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
-      </div>
-    </div>
-  );
+  return <div className="text-white p-4">Logging you in…</div>;
 }
