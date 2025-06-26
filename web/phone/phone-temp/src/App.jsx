@@ -10,49 +10,44 @@ import NotificationsScreen from "./features/Notifications/NotificationsScreen";
 import ProfileScreen from "./features/Profile/ProfileScreen";
 import EditProfileScreen from "./features/Profile/EditProfileScreen";
 import LoginSignupScreen from "./features/Auth/LoginSignupScreen";
-import AuthSuccess from "./features/Auth/AuthSuccess";
+import AuthSuccess from './features/Auth/AuthSuccess';
 
 export default function App() {
-  // Single state declarations
   const [activePath, setActivePath] = useState("home");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authTransition, setAuthTransition] = useState(false);
 
-  // On mount, handle OAuth redirect or normal auth check
+  // On mount: handle OAuth tokens in query params or normal auth
   useEffect(() => {
-    if (window.location.pathname === '/auth/success') {
-      const params = new URLSearchParams(window.location.search);
-      const accessToken = params.get('accessToken');
-      const refreshToken = params.get('refreshToken');
-      if (accessToken) {
-        localStorage.setItem('token', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        api.get('/users/profile')
-          .then(({ data }) => {
-            setUser(data);
-            setIsAuthenticated(true);
-            setActivePath('home');
-          })
-          .catch(() => {})
-          .finally(() => setCheckingAuth(false));
-        return;
-      }
+    const params = new URLSearchParams(window.location.search);
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
+
+    if (accessToken) {
+      // Store tokens
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      // Remove query params from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-    const token = localStorage.getItem("token");
+
+    const token = localStorage.getItem('token');
     if (!token) {
       setCheckingAuth(false);
       return;
     }
-    api.get("/users/profile")
+
+    // Validate token by fetching profile
+    api.get('/users/profile')
       .then(({ data }) => {
         setUser(data);
         setIsAuthenticated(true);
       })
       .catch(() => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         setIsAuthenticated(false);
       })
       .finally(() => setCheckingAuth(false));
@@ -81,29 +76,36 @@ export default function App() {
   const handleLogout = () => {
     setAuthTransition(true);
     setTimeout(() => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       setIsAuthenticated(false);
       setUser(null);
-      setActivePath("home");
+      setActivePath('home');
       setAuthTransition(false);
     }, 600);
   };
 
   const renderScreen = () => {
     switch (activePath) {
-      case "tasks": return <TasksScreen />;
-      case "chat": return <ChatScreen />;
-      case "home": return <HomeScreen onNavigate={navigateTo} />;
-      case "fitness": return <FitnessScreen />;
-      case "history": return <HistoryScreen />;
-      case "profile": return <ProfileScreen user={user} onLogout={handleLogout} onEditProfile={() => navigateTo("edit-profile")} />;
-      case "edit-profile": return <EditProfileScreen user={user} onBack={() => navigateTo("profile")} />;
-      case "notifications": return <NotificationsScreen onNavigate={navigateTo} />;
+      case 'tasks': return <TasksScreen />;
+      case 'chat': return <ChatScreen />;
+      case 'home': return <HomeScreen onNavigate={navigateTo} />;
+      case 'fitness': return <FitnessScreen />;
+      case 'history': return <HistoryScreen />;
+      case 'profile': return <ProfileScreen user={user} onLogout={handleLogout} onEditProfile={() => navigateTo('edit-profile')} />;
+      case 'edit-profile': return <EditProfileScreen user={user} onBack={() => navigateTo('profile')} />;
+      case 'notifications': return <NotificationsScreen onNavigate={navigateTo} />;
       default: return <HomeScreen onNavigate={navigateTo} />;
     }
   };
 
+if (window.location.pathname === '/auth/success') {
+  // render only the AuthSuccess component
+  return <AuthSuccess onAuth={(user) => {
+    setUser(user);
+    setIsAuthenticated(true);
+  }} />;
+}
   if (checkingAuth || authTransition) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
