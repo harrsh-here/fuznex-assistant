@@ -3,16 +3,14 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 
-function generateRandomString(len = 16) {
+// Generate secure random string
+function generateRandomString(len = 32) {
   return crypto.randomBytes(len).toString('hex');
 }
 
 let googleClient = null;
-
 async function getGoogleClient() {
   if (googleClient) return googleClient;
-
-  console.log('🔍 Discovering Google OAuth Issuer...');
   const { Issuer } = await import('openid-client');
   const googleIssuer = await Issuer.discover('https://accounts.google.com');
 
@@ -23,16 +21,30 @@ async function getGoogleClient() {
     response_types: ['code'],
   });
 
-  console.log('✅ Google OAuth client initialized');
   return googleClient;
 }
 
+// STEP 1: Redirect to Google Login
 exports.googleLogin = async (req, res) => {
   try {
-    console.log('➡️ Initiating Google login...');
     const client = await getGoogleClient();
     const state = generateRandomString();
     const nonce = generateRandomString();
+
+    // Save state + nonce in secure cookies
+    res.cookie('oauth_state', state, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+      maxAge: 5 * 60 * 1000 // 5 min
+    });
+
+    res.cookie('oauth_nonce', nonce, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+      maxAge: 5 * 60 * 1000
+    });
 
     const authUrl = client.authorizationUrl({
       scope: 'openid email profile',
@@ -40,47 +52,59 @@ exports.googleLogin = async (req, res) => {
       nonce,
     });
 
-    console.log('🔗 Redirecting user to Google auth URL...');
-    res.redirect(authUrl);
+    console.log('🔐 Redirecting to Google:', authUrl);
+    return res.redirect(authUrl);
   } catch (err) {
-    console.error('❌ Error during Google login:', err);
-    res.status(500).send('Internal Server Error during Google login');
+    console.error('Error generating Google Auth URL:', err);
+    res.status(500).send('Internal Server Error during Google OAuth Login');
   }
 };
 
+// STEP 2: Google Callback → Exchange Code for Tokens
 exports.googleCallback = async (req, res) => {
   try {
-    console.log('↩️ Google OAuth callback triggered');
     const client = await getGoogleClient();
     const params = client.callbackParams(req);
 
-    console.log('🔁 Exchanging code for tokens...');
-    const tokenSet = await client.callback(process.env.GOOGLE_CALLBACK_URL, params);
-    console.log('✅ Tokens received:', tokenSet);
+    // Extract state/nonce from cookies
+    const expectedState = req.cookies['oauth_state'];
+    const expectedNonce = req.cookies['oauth_nonce'];
 
-    console.log('👤 Fetching user info...');
+    if (!expectedState || !expectedNonce) {
+      console.warn('⚠️ Missing state/nonce cookie');
+      return res.status(400).send('Missing OAuth state or nonce');
+    }
+
+    console.log('🔄 Verifying callback with:', {
+      expectedState,
+      receivedState: params.state,
+      expectedNonce,
+    });
+
+    // Validate state and nonce
+    const tokenSet = await client.callback(
+      process.env.GOOGLE_CALLBACK_URL,
+      params,
+      { state: expectedState, nonce: expectedNonce }
+    );
+
     const userinfo = await client.userinfo(tokenSet.access_token);
-    console.log('✅ User info received:', userinfo);
+    console.log('✅ Google user info:', userinfo);
 
     let user = await User.findOne({ where: { email: userinfo.email } });
-    if (!user) {
-      console.log('🆕 New user - creating in DB');
-      const randomPassword = crypto.randomBytes(20).toString('hex');
 
+    if (!user) {
       user = await User.create({
         name: userinfo.name || userinfo.email.split('@')[0],
         email: userinfo.email,
-        password: randomPassword,
+        password: crypto.randomBytes(20).toString('hex'),
         provider: 'google',
         provider_id: userinfo.sub,
         oauth_access_token: tokenSet.access_token,
         oauth_refresh_token: tokenSet.refresh_token || null,
         role: 'user',
       });
-
-      console.log('✅ User created:', user.user_id);
-    } else {
-      console.log('👤 Existing user found:', user.user_id);
+      console.log('👤 Created new Google user:', user.email);
     }
 
     const accessToken = jwt.sign(
@@ -94,16 +118,18 @@ exports.googleCallback = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    console.log('🔐 Tokens generated for user');
-
     const redirectTo = new URL(`${process.env.FRONTEND_URL}/auth/success`);
     redirectTo.searchParams.set('accessToken', accessToken);
     redirectTo.searchParams.set('refreshToken', refreshToken);
 
-    console.log('🌐 Redirecting to frontend:', redirectTo.toString());
+    // Clear cookies after use
+    res.clearCookie('oauth_state');
+    res.clearCookie('oauth_nonce');
+
+    console.log('🔁 Redirecting back to frontend:', redirectTo.toString());
     return res.redirect(redirectTo.toString());
   } catch (err) {
-    console.error('❌ Google OAuth Error:', err);
+    console.error('❌ Google OAuth Callback Error:', err);
     res.status(500).send('Internal Server Error during Google OAuth');
   }
 };
