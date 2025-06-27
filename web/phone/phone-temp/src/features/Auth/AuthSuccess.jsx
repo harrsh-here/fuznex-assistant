@@ -1,34 +1,36 @@
-import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../../api/api';
+// src/features/Auth/AuthSuccess.jsx
+import React, { useEffect } from 'react';
+import { SpinnerGap } from 'phosphor-react';
+import logo from '/logo.svg'; // Adjust path if needed
 
 export default function AuthSuccess({ onAuth }) {
-  const nav = useNavigate();
-  const { search } = useLocation();
-
   useEffect(() => {
-    const params = new URLSearchParams(search);
+    const params = new URLSearchParams(window.location.search);
     const accessToken = params.get('accessToken');
     const refreshToken = params.get('refreshToken');
 
-    if (!accessToken) {
-      return nav('/login?error=oauth');
+    if (accessToken && refreshToken) {
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      setTimeout(() => {
+        onAuth?.(null); // `null` if you want to refetch profile later in App
+      }, 800);
     }
+  }, []);
 
-    // Store tokens
-    localStorage.setItem('token', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+  return (
+    <div className="absolute inset-0 bg-[#101010] flex flex-col items-center justify-center font-sans text-white space-y-6 px-4">
+      <img src={logo} alt="FuzNex Logo" className="h-14 mb-2 animate-pulse" />
 
-    // Fetch user profile to complete login
-    api.get('/users/profile')
-      .then(({ data }) => {
-        onAuth(data);
-        nav('/', { replace: true }); // redirect to home
-      })
-      .catch(() => {
-        nav('/login?error=auth');
-      });
-  }, [search, nav, onAuth]);
+      <h1 className="text-2xl font-bold text-purple-400">Logging you in...</h1>
 
-  return <div className="text-white p-4">Logging you in…</div>;
+      <p className="text-gray-400 text-sm text-center max-w-xs">
+        Hang tight, we’re preparing your personalized FuzNex experience.
+      </p>
+
+      <div className="mt-6">
+        <SpinnerGap size={36} className="text-purple-500 animate-spin" />
+      </div>
+    </div>
+  );
 }

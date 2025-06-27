@@ -10,7 +10,7 @@ import NotificationsScreen from "./features/Notifications/NotificationsScreen";
 import ProfileScreen from "./features/Profile/ProfileScreen";
 import EditProfileScreen from "./features/Profile/EditProfileScreen";
 import LoginSignupScreen from "./features/Auth/LoginSignupScreen";
-import AuthSuccess from './features/Auth/AuthSuccess';
+import AuthSuccess from "./features/Auth/AuthSuccess";
 
 export default function App() {
   const [activePath, setActivePath] = useState("home");
@@ -19,17 +19,15 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authTransition, setAuthTransition] = useState(false);
 
-  // On mount: handle OAuth tokens in query params or normal auth
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get('accessToken');
     const refreshToken = params.get('refreshToken');
 
-    if (accessToken) {
-      // Store tokens
+    if (accessToken && refreshToken) {
+      console.log("[OAuth] Tokens received, saving to localStorage");
       localStorage.setItem('token', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      // Remove query params from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
@@ -39,9 +37,9 @@ export default function App() {
       return;
     }
 
-    // Validate token by fetching profile
     api.get('/users/profile')
       .then(({ data }) => {
+        console.log("[Auth] Logged in as", data.name);
         setUser(data);
         setIsAuthenticated(true);
       })
@@ -99,13 +97,6 @@ export default function App() {
     }
   };
 
-if (window.location.pathname === '/auth/success') {
-  // render only the AuthSuccess component
-  return <AuthSuccess onAuth={(user) => {
-    setUser(user);
-    setIsAuthenticated(true);
-  }} />;
-}
   if (checkingAuth || authTransition) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
@@ -118,7 +109,12 @@ if (window.location.pathname === '/auth/success') {
     <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
       <div className="w-[375px] h-[812px] border-[14px] border-black rounded-[50px] shadow-2xl overflow-hidden relative bg-black">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-2xl z-10" />
-        {!isAuthenticated ? (
+        {window.location.pathname === '/auth/success' ? (
+          <AuthSuccess onAuth={(user) => {
+            setUser(user);
+            setIsAuthenticated(true);
+          }} />
+        ) : !isAuthenticated ? (
           <LoginSignupScreen onLogin={handleLogin} onRegister={handleRegister} />
         ) : (
           <AppShell activePath={activePath} onNavigate={navigateTo} onLogout={handleLogout}>

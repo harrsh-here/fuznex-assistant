@@ -21,6 +21,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
+
+const session = require('express-session');
+
+app.use(session({
+  secret: process.env.JWT_SECRET, // use a secure secret
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false }, // true if using HTTPS
+}));
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/alarms', alarmsRoutes);

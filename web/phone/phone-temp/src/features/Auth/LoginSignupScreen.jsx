@@ -1,4 +1,3 @@
-// src/features/Auth/LoginSignupScreen.jsx
 import React, { useState } from "react";
 import { GoogleLogo, WindowsLogo, Eye, EyeSlash } from "phosphor-react";
 import bgImage from "../../assets/background.png";
@@ -14,9 +13,13 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [oauthLoading, setOauthLoading] = useState(false);
+
   const handleGoogleLogin = () => {
-  window.location.href = 'https://fuznex.onrender.com/api/auth/google';
-};
+    setOauthLoading(true);
+    window.location.href = "https://fuznex.onrender.com/api/auth/google";
+  };
+
   const submit = async () => {
     setLoading(true);
     setError("");
@@ -24,9 +27,15 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
       if (mode === "signup") {
         if (password !== password2) {
           setError("Passwords must match");
+          setLoading(false);
           return;
         }
-        const { data } = await api.post("/users/register", { name, phone_number: phone, email, password });
+        const { data } = await api.post("/users/register", {
+          name,
+          phone_number: phone,
+          email,
+          password,
+        });
         localStorage.setItem("token", data.token);
         localStorage.setItem("refreshToken", data.refreshToken);
         onRegister(data.user);
@@ -45,12 +54,8 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
   };
 
   return (
-    <div
-      className="absolute inset-0 bg-[#101010] flex items-center justify-center font-sans px-4 py-8"
-      
-    >
-     <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg bg-transparent backdrop-blur-xl border border-purple-500 rounded-3xl p-6 xs:p-5 space-y-3 shadow-0xl">
-
+    <div className="absolute inset-0 bg-[#101010] flex items-center justify-center font-sans px-4 py-8">
+      <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg bg-transparent backdrop-blur-xl border border-purple-500 rounded-3xl p-6 xs:p-5 space-y-3 shadow-0xl">
         {/* Notch */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-1 bg-purple-500 rounded-b-md" />
 
@@ -62,22 +67,27 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
 
         {/* Mode Toggle */}
         <div className="flex items-center justify-center border-b border-gray-700 pb-2">
-          {['login', 'signup'].map((m) => (
+          {["login", "signup"].map((m) => (
             <button
               key={m}
-              onClick={() => { setMode(m); setError(''); }}
+              onClick={() => {
+                setMode(m);
+                setError("");
+              }}
               className={`mx-2 px-6 py-2 text-lg font-semibold transition border-b-2 ${
-                mode === m ? 'text-purple-400 border-purple-400' : 'text-gray-400 border-transparent'
+                mode === m
+                  ? "text-purple-400 border-purple-400"
+                  : "text-gray-400 border-transparent"
               }`}
             >
-              {m === 'login' ? 'Login' : 'Sign Up'}
+              {m === "login" ? "Login" : "Sign Up"}
             </button>
           ))}
         </div>
 
         {/* Form */}
         <div className="space-y-2">
-          {mode === 'signup' && (
+          {mode === "signup" && (
             <>
               <input
                 type="text"
@@ -104,24 +114,28 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
           />
           <div className="relative">
             <input
-              type={showPass ? 'text' : 'password'}
+              type={showPass ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-white/10 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:bg-white/5 transition"
             />
-            <button onClick={() => setShowPass(!showPass)} className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400" type="button">
+            <button
+              onClick={() => setShowPass(!showPass)}
+              className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400"
+              type="button"
+            >
               {showPass ? <EyeSlash size={22} /> : <Eye size={22} />}
             </button>
           </div>
-          {mode === 'login' && (
+          {mode === "login" && (
             <div className="mt-1 text-left">
               <button className="text-xs font-medium underline text-gray-400 hover:text-white transition bg-transparent focus:outline-none">
                 Forgot password?
               </button>
             </div>
           )}
-          {mode === 'signup' && (
+          {mode === "signup" && (
             <input
               type="password"
               placeholder="Confirm Password"
@@ -141,23 +155,29 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
           disabled={loading}
           className="w-full h-12 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white font-bold rounded-lg text-lg transition"
         >
-          {loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create Account'}
+          {loading ? "Please wait..." : mode === "login" ? "Login" : "Create Account"}
         </button>
 
         {/* OAuth */}
         <div className="space-y-3">
-          <button onClick={handleGoogleLogin} className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium">
-            <GoogleLogo size={22} /> Continue with Google
-         
+          <button
+            onClick={handleGoogleLogin}
+            disabled={oauthLoading}
+            className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium"
+          >
+            <GoogleLogo size={22} />{" "}
+            {oauthLoading ? "Redirecting..." : "Continue with Google"}
           </button>
         </div>
 
         {/* Footer */}
-        {mode === 'signup' && (
+        {mode === "signup" && (
           <div className="text-center text-sm text-gray-400">
             <p>
-              By signing up you agree to our{' '}
-              <button className="underline hover:text-white transition">Terms & Privacy</button>
+              By signing up you agree to our{" "}
+              <button className="underline hover:text-white transition">
+                Terms & Privacy
+              </button>
             </p>
           </div>
         )}
