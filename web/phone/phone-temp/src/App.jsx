@@ -21,35 +21,44 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get('accessToken');
-    const refreshToken = params.get('refreshToken');
+    const accessToken = params.get("accessToken");
+    const refreshToken = params.get("refreshToken");
 
     if (accessToken && refreshToken) {
       console.log("[OAuth] Tokens received, saving to localStorage");
-      localStorage.setItem('token', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem("token", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
       setCheckingAuth(false);
       return;
     }
 
-    api.get('/users/profile')
+    api
+      .get("/users/profile")
       .then(({ data }) => {
         console.log("[Auth] Logged in as", data.name);
         setUser(data);
         setIsAuthenticated(true);
       })
       .catch(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         setIsAuthenticated(false);
       })
       .finally(() => setCheckingAuth(false));
   }, []);
+
+  // 🔁 OAuth redirect handler
+  useEffect(() => {
+    if (isAuthenticated && window.location.pathname === "/auth/success") {
+      window.history.replaceState({}, document.title, "/");
+      setActivePath("home");
+    }
+  }, [isAuthenticated]);
 
   const navigateTo = (path) => setActivePath(path);
 
@@ -74,26 +83,46 @@ export default function App() {
   const handleLogout = () => {
     setAuthTransition(true);
     setTimeout(() => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
       setIsAuthenticated(false);
       setUser(null);
-      setActivePath('home');
+      setActivePath("home");
       setAuthTransition(false);
     }, 600);
   };
 
   const renderScreen = () => {
     switch (activePath) {
-      case 'tasks': return <TasksScreen />;
-      case 'chat': return <ChatScreen />;
-      case 'home': return <HomeScreen onNavigate={navigateTo} />;
-      case 'fitness': return <FitnessScreen />;
-      case 'history': return <HistoryScreen />;
-      case 'profile': return <ProfileScreen user={user} onLogout={handleLogout} onEditProfile={() => navigateTo('edit-profile')} />;
-      case 'edit-profile': return <EditProfileScreen user={user} onBack={() => navigateTo('profile')} />;
-      case 'notifications': return <NotificationsScreen onNavigate={navigateTo} />;
-      default: return <HomeScreen onNavigate={navigateTo} />;
+      case "tasks":
+        return <TasksScreen />;
+      case "chat":
+        return <ChatScreen />;
+      case "home":
+        return <HomeScreen onNavigate={navigateTo} />;
+      case "fitness":
+        return <FitnessScreen />;
+      case "history":
+        return <HistoryScreen />;
+      case "profile":
+        return (
+          <ProfileScreen
+            user={user}
+            onLogout={handleLogout}
+            onEditProfile={() => navigateTo("edit-profile")}
+          />
+        );
+      case "edit-profile":
+        return (
+          <EditProfileScreen
+            user={user}
+            onBack={() => navigateTo("profile")}
+          />
+        );
+      case "notifications":
+        return <NotificationsScreen onNavigate={navigateTo} />;
+      default:
+        return <HomeScreen onNavigate={navigateTo} />;
     }
   };
 
@@ -109,15 +138,24 @@ export default function App() {
     <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
       <div className="w-[375px] h-[812px] border-[14px] border-black rounded-[50px] shadow-2xl overflow-hidden relative bg-black">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-2xl z-10" />
-        {window.location.pathname === '/auth/success' ? (
-          <AuthSuccess onAuth={(user) => {
-            setUser(user);
-            setIsAuthenticated(true);
-          }} />
+        {window.location.pathname === "/auth/success" && !isAuthenticated ? (
+          <AuthSuccess
+            onAuth={(user) => {
+              setUser(user);
+              setIsAuthenticated(true);
+            }}
+          />
         ) : !isAuthenticated ? (
-          <LoginSignupScreen onLogin={handleLogin} onRegister={handleRegister} />
+          <LoginSignupScreen
+            onLogin={handleLogin}
+            onRegister={handleRegister}
+          />
         ) : (
-          <AppShell activePath={activePath} onNavigate={navigateTo} onLogout={handleLogout}>
+          <AppShell
+            activePath={activePath}
+            onNavigate={navigateTo}
+            onLogout={handleLogout}
+          >
             {renderScreen()}
           </AppShell>
         )}

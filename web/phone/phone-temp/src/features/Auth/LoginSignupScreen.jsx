@@ -14,6 +14,7 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [oauthLoading, setOauthLoading] = useState(false);
+  
 
   const handleGoogleLogin = () => {
     setOauthLoading(true);
