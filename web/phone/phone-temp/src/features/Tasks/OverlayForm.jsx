@@ -1,199 +1,174 @@
+// src/features/Tasks/OverlayForm.jsx
 import React, { useState, useEffect } from "react";
+import { X } from "phosphor-react";
+import moment from "moment";
 import api from "../../api/api";
+import LoadingSpinner from "./LoadingSpinner";
 
-export default function OverlayForm({ type, initialData, onClose, onSaved }) {
-  const isTask = type === "task";
+export default function OverlayForm({ mode, item, onCancel, onSave }) {
+  const isAlarm = mode === "alarms";
 
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [description, setDescription] = useState(initialData?.description || "");
-  const [dueDate, setDueDate] = useState(initialData?.due_date?.slice(0, 16) || "");
-  const [priority, setPriority] = useState(initialData?.priority || "low");
-  const [subtasks, setSubtasks] = useState(initialData?.subtasks || []);
-  const [newSubtask, setNewSubtask] = useState("");
+  const [title, setTitle] = useState(item?.title || item?.label || "");
+  const [description, setDescription] = useState(item?.description || "");
+  const [dueDate, setDueDate] = useState(item?.due_date?.slice(0, 16) || "");
+  const [priority, setPriority] = useState(item?.priority || "low");
+  const [repeat, setRepeat] = useState(item?.repeat_pattern || "once");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [alarmTime, setAlarmTime] = useState(
-    initialData?.alarm_time?.slice(0, 5) || ""
-  );
-  const [repeat, setRepeat] = useState(initialData?.repeat_pattern || "once");
-  const [label, setLabel] = useState(initialData?.label || "");
+  const isEdit = !!item;
 
   const handleSubmit = async () => {
+    if (!title.trim()) {
+      setError("Title is required.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
     try {
-      if (isTask && !title.trim()) return alert("Task title is required.");
-      if (!isTask && !alarmTime) return alert("Alarm time is required.");
+      if (isAlarm) {
+        const payload = {
+          alarm_time: dueDate,
+          alarm_date: dueDate?.split("T")[0],
+          time_format: "24",
+          label: title,
+          description,
+          repeat_pattern: repeat,
+        };
 
-      const payload = isTask
-        ? { title, description, due_date: dueDate, priority, subtasks }
-        : { alarm_time: alarmTime, repeat_pattern: repeat, label };
-
-      const endpoint = isTask ? "/tasks" : "/alarms";
-      if (initialData) {
-        await api.put(`${endpoint}/${initialData[isTask ? "task_id" : "alarm_id"]}`, payload);
+        if (isEdit) {
+          await api.put(`/alarms/${item.alarm_id}`, payload);
+        } else {
+          await api.post("/alarms", payload);
+        }
       } else {
-        await api.post(endpoint, payload);
+        const payload = {
+          title,
+          description,
+          priority,
+          due_date: dueDate || null,
+        };
+
+        if (isEdit) {
+          await api.put(`/todos/${item.task_id}`, payload);
+        } else {
+          await api.post("/todos", payload);
+        }
       }
 
-      onSaved();
-      onClose();
+      onSave();
     } catch (err) {
       console.error("Save error:", err);
-      alert("Error saving. Please try again.");
+      setError("Error saving. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddSubtask = () => {
-    if (!newSubtask.trim()) return;
-    if (newSubtask.length > 50) return alert("Subtask too long.");
-    setSubtasks((prev) => [...prev, { title: newSubtask }]);
-    setNewSubtask("");
-  };
-
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-[#1a1a1a] border border-[#333] text-white w-full max-w-md p-6 rounded-xl space-y-5">
-        <h3 className="text-xl font-semibold">
-          {initialData ? "Edit" : "Add"} {isTask ? "Task" : "Alarm"}
-        </h3>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#1c1c1c] w-full max-w-md p-6 rounded-xl border border-gray-700">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-white">
+            {isEdit ? "Edit" : "Add"} {isAlarm ? "Alarm" : "Task"}
+          </h3>
+          <button onClick={onCancel} disabled={loading}>
+            <X size={20} className="text-gray-400 hover:text-white" />
+          </button>
+        </div>
 
-        {/* Title */}
-        {isTask ? (
-          <>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                maxLength={100}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded text-sm"
-              />
-            </div>
+        <div className="space-y-4 text-sm">
+          <div>
+            <label className="text-white">Title *</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mt-1 w-full px-3 py-2 bg-[#121212] text-white border border-[#2a2a2a] rounded-lg focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Description</label>
-              <textarea
-                maxLength={300}
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded text-sm resize-none"
-              />
-            </div>
+          <div>
+            <label className="text-white">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="mt-1 w-full px-3 py-2 bg-[#121212] text-white border border-[#2a2a2a] rounded-lg focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
 
-            <div className="flex gap-3">
-              <div className="flex-1 space-y-1">
-                <label className="text-sm font-medium">Due Date</label>
+          {isAlarm ? (
+            <>
+              <div>
+                <label className="text-white">Time *</label>
                 <input
                   type="datetime-local"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded text-sm"
+                  className="mt-1 w-full px-3 py-2 bg-[#121212] text-white border border-[#2a2a2a] rounded-lg"
                 />
               </div>
-              <div className="flex-1 space-y-1">
-                <label className="text-sm font-medium">Priority</label>
+
+              <div>
+                <label className="text-white">Repeat *</label>
+                <select
+                  value={repeat}
+                  onChange={(e) => setRepeat(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 bg-[#121212] text-white border border-[#2a2a2a] rounded-lg"
+                >
+                  <option value="once">Once</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="text-white">Due Date</label>
+                <input
+                  type="datetime-local"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 bg-[#121212] text-white border border-[#2a2a2a] rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="text-white">Priority</label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded text-sm"
+                  className="mt-1 w-full px-3 py-2 bg-[#121212] text-white border border-[#2a2a2a] rounded-lg"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
               </div>
-            </div>
+            </>
+          )}
+        </div>
 
-            {/* Subtasks */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Subtasks</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  maxLength={50}
-                  value={newSubtask}
-                  onChange={(e) => setNewSubtask(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded text-sm"
-                  placeholder="Add a subtask"
-                />
-                <button
-                  onClick={handleAddSubtask}
-                  className="px-3 py-2 bg-purple-600 rounded hover:bg-purple-700 text-sm"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="text-xs text-gray-400 mt-2 space-y-1 max-h-24 overflow-y-auto">
-                {subtasks.map((s, i) => (
-                  <div key={i} className="flex justify-between items-center">
-                    <span>{s.title}</span>
-                    <button
-                      className="text-red-400 hover:text-red-500 text-xs"
-                      onClick={() =>
-                        setSubtasks((prev) => prev.filter((_, idx) => idx !== i))
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">
-                Alarm Time <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="time"
-                value={alarmTime}
-                onChange={(e) => setAlarmTime(e.target.value)}
-                className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded text-sm"
-              />
-            </div>
+        {error && <p className="mt-3 text-red-400 text-sm">{error}</p>}
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Repeat</label>
-              <select
-                value={repeat}
-                onChange={(e) => setRepeat(e.target.value)}
-                className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded text-sm"
-              >
-                <option value="once">Once</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Label</label>
-              <input
-                type="text"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded text-sm"
-              />
-            </div>
-          </>
-        )}
-
-        {/* Footer */}
-        <div className="flex justify-end gap-3 pt-4">
+        <div className="flex justify-end mt-6 gap-3">
           <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+            onClick={onCancel}
+            disabled={loading}
+            className="px-4 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-500"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm"
+            disabled={loading}
+            className="px-4 py-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
           >
-            {initialData ? "Update" : "Add"}
+            {loading && <LoadingSpinner size={16} />}
+            {isEdit ? "Save Changes" : "Add"}
           </button>
         </div>
       </div>

@@ -1,58 +1,68 @@
-import React, { useEffect, useState } from "react";
+// src/features/Tasks/TaskCard.jsx
+import React from "react";
 import { DotsThreeVertical } from "phosphor-react";
-import { fetchSubtasks } from "../../api/subtasks";
+import moment from "moment";
 
-export default function TaskCard({ task, onOptions }) {
-  const [subtasks, setSubtasks] = useState([]);
-
-  useEffect(() => {
-    if (task.task_id) {
-      fetchSubtasks(task.task_id).then(setSubtasks).catch(console.error);
-    }
-  }, [task.task_id]);
-
-  const priorityDot = {
-    high: "bg-green-400",
-    medium: "bg-yellow-400",
-    low: "",
-  };
-
-  const visibleSubtasks = subtasks.slice(0, 2);
-  const remaining = subtasks.length - visibleSubtasks.length;
+export default function TaskCard({ task, onOptions, onEdit, onOpenDetail }) {
+  // Format due date as relative (e.g. “Due in 2 days”) if exists
+  const dueDateText = task.due_date
+    ? `Due ${moment(task.due_date).fromNow(true)}`
+    : null;
 
   return (
-    <div className="bg-[#1e1e1e] px-4 py-3 rounded-2xl border border-[#2a2a2a] shadow space-y-1">
+    <div
+      onClick={() => onOpenDetail(task)}
+      className="bg-[#1e1e1e] px-4 py-3 rounded-2xl border border-[#2a2a2a] shadow space-y-1 cursor-pointer hover:border-purple-600"
+    >
       <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1">
           {task.priority !== "low" && (
-            <span className={`w-2 h-2 rounded-full ${priorityDot[task.priority]}`} />
+            <span
+              className={`w-2 h-2 rounded-full ${
+                task.priority === "high"
+                  ? "bg-green-400"
+                  : task.priority === "medium"
+                  ? "bg-yellow-400"
+                  : ""
+              }`}
+            />
           )}
-          <div>
-            <div className={`text-sm font-medium ${task.is_completed ? "line-through text-gray-500" : "text-white"}`}>
+          <div className="flex-1 min-w-0">
+            <div
+              className={`text-sm font-medium truncate ${
+                task.is_completed ? "line-through text-gray-500" : "text-white"
+              }`}
+              title={task.title}
+            >
               {task.title}
             </div>
             {task.description && (
-              <div className="text-xs text-gray-400">{task.description.slice(0, 50)}{task.description.length > 50 && "..."}</div>
+              <div
+                className="text-xs text-gray-400 truncate"
+                title={task.description}
+              >
+                {task.description.length > 50
+                  ? task.description.slice(0, 50) + "..."
+                  : task.description}
+              </div>
+            )}
+            {dueDateText && (
+              <div className="text-xs text-purple-400">{dueDateText}</div>
             )}
           </div>
         </div>
-        <button onClick={onOptions} className="text-gray-400 hover:text-purple-400">
+        <button
+          onClick={e => {
+            e.stopPropagation();
+             const rect = e.currentTarget.getBoundingClientRect();
+            onOptions(task,rect);
+          }}
+          className="text-gray-400 hover:text-purple-400"
+          aria-label="Task options"
+        >
           <DotsThreeVertical size={18} />
         </button>
       </div>
-
-      {subtasks.length > 0 && (
-        <div className="pl-6 pt-1 space-y-1 text-xs text-gray-300">
-          {visibleSubtasks.map((s) => (
-            <div key={s.subtask_id} className="truncate">
-              • {s.title.length > 30 ? s.title.slice(0, 30) + "..." : s.title}
-            </div>
-          ))}
-          {remaining > 0 && (
-            <div className="text-gray-500">+{remaining} more...</div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

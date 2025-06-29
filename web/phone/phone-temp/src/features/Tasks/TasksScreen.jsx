@@ -1,121 +1,117 @@
 // src/features/Tasks/TasksScreen.jsx
-// src/features/Tasks/TasksScreen.jsx
 import React, { useState, useEffect } from "react";
-import { Plus, Clock } from "phosphor-react";
+import { Plus, Clock, Funnel } from "phosphor-react";
 import api from "../../api/api";
+
 import TaskCard from "./TaskCard";
 import AlarmCard from "./AlarmCard";
 import OptionsOverlay from "./OptionsOverlay";
 import AddEditOverlay from "./AddEditOverlay";
-
-// …the rest of your TasksScreen component…
-
+import DetailOverlay from "./DetailOverlay";
+import UndoManager from "./UndoManager";
+import LoadingSpinner from "./LoadingSpinner";
 
 export default function TasksScreen() {
   const [activeTab, setActiveTab] = useState("tasks");
   const [tasks, setTasks] = useState([]);
   const [alarms, setAlarms] = useState([]);
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [optionsItem, setOptionsItem] = useState(null);
   const [addEditProps, setAddEditProps] = useState(null);
-
-  // Undo state
-  const [undoInfo, setUndoInfo] = useState(null);
+  const [detailItem, setDetailItem] = useState(null);
+  const [undoToasts, setUndoToasts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadAll();
   }, []);
 
-  const loadAll = () => {
-    fetchTasks();
-    fetchAlarms();
-  };
-
-  const fetchTasks = async () => {
+  const loadAll = async () => {
     try {
-      const { data } = await api.get("/todos");
-      setTasks(
-        data.slice().sort((a, b) => {
-          // incomplete first, then soonest due
-          if (a.is_completed !== b.is_completed) return a.is_completed ? 1 : -1;
-          return (a.due_date ? new Date(a.due_date) : 0) - (b.due_date ? new Date(b.due_date) : 0);
-        })
-      );
+      const [tasksRes, alarmsRes] = await Promise.all([
+        api.get("/todos"),
+        api.get("/alarms"),
+      ]);
+      setTasks(sortTasks(tasksRes.data));
+      setAlarms(sortAlarms(alarmsRes.data));
     } catch (err) {
-      console.error("Error fetching tasks:", err);
+      console.error("Failed to fetch:", err);
     }
   };
 
-  const fetchAlarms = async () => {
-    try {
-      const { data } = await api.get("/alarms");
-      setAlarms(data.slice().sort((a, b) => new Date(a.alarm_time) - new Date(b.alarm_time)));
-    } catch (err) {
-      console.error("Error fetching alarms:", err);
-    }
+  const sortTasks = (items) => {
+    return [...items]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .sort((a, b) => a.is_completed - b.is_completed);
   };
 
-  // Open Add/Edit overlay
-  const openAdd = () => setAddEditProps({ mode: activeTab, item: null });
-  const openEdit = (item) => setAddEditProps({ mode: activeTab, item });
+  const sortAlarms = (items) => {
+    return [...items]
+      .sort((a, b) => new Date(b.alarm_time) - new Date(a.alarm_time))
+      .sort((a, b) => b.is_active - a.is_active);
+  };
 
-  const closeAddEdit = () => {
-    setAddEditProps(null);
+  const openAdd = () => {
+    setAddEditProps({ mode: activeTab, item: null });
+  };
+
+  const openEdit = (item) => {
+    setAddEditProps({ mode: activeTab, item });
+    setDetailItem(null);
     setOptionsItem(null);
   };
 
   const onSave = () => {
-    closeAddEdit();
+    setAddEditProps(null);
     loadAll();
   };
 
-  // Deletion with undo
   const onDelete = async () => {
-    const { type, task_id, alarm_id } = optionsItem;
+    if (!optionsItem) return;
+    const { type, task_id, alarm_id, title, label } = optionsItem;
     const id = type === "tasks" ? task_id : alarm_id;
     const route = type === "tasks" ? "todos" : "alarms";
 
-    // Remove immediately from UI
-    const deleted =
-      type === "tasks"
-        ? tasks.find((t) => t.task_id === id)
-        : alarms.find((a) => a.alarm_id === id);
-    if (type === "tasks") setTasks((prev) => prev.filter((t) => t.task_id !== id));
-    else setAlarms((prev) => prev.filter((a) => a.alarm_id !== id));
-
-    setOptionsItem(null);
-
-    // Kick off real deletion after delay unless undone
-    const timeoutId = setTimeout(async () => {
-      try {
-        await api.delete(`/${route}/${id}`);
-      } catch (err) {
-        console.error("Error deleting:", err);
-      }
-      setUndoInfo(null);
-    }, 5000);
-
-    setUndoInfo({ deleted, type, timeoutId, route });
-  };
-
-  const undoDelete = async () => {
-    if (!undoInfo) return;
-    clearTimeout(undoInfo.timeoutId);
-    // re-create item
+    setLoading(true);
     try {
-      await api.post(`/${undoInfo.route}`, undoInfo.deleted);
+      await api.delete(`/${route}/${id}`);
+      setUndoToasts((prev) => [
+        { id: Date.now(), type, itemId: id, title: title || label },
+        ...prev.slice(0, 2),
+      ]);
       loadAll();
     } catch (err) {
-      console.error("Error undoing delete:", err);
+      alert("Error deleting item");
     }
-    setUndoInfo(null);
+    setLoading(false);
+    setOptionsItem(null);
   };
+
+  const applyUndo = async (toast) => {
+    const { type, itemId } = toast;
+    const route = type === "tasks" ? "todos/restore" : "alarms/restore";
+    setLoading(true);
+    try {
+      await api.post(`/${route}/${itemId}`);
+      setUndoToasts((prev) => prev.filter((t) => t.id !== toast.id));
+      loadAll();
+    } catch (err) {
+      alert("Undo failed.");
+    }
+    setLoading(false);
+  };
+
+  const visibleTasks =
+    priorityFilter === "all"
+      ? tasks
+      : tasks.filter((t) => t.priority === priorityFilter);
 
   return (
     <div className="flex flex-col h-full px-5 py-6 pt-12 text-white overflow-hidden relative">
       <h2 className="text-2xl font-semibold mb-4">Your Tasks & Alarms</h2>
 
       {/* Tabs */}
-      <div className="flex mb-6 gap-4">
+      <div className="flex mb-4 gap-4">
         {["tasks", "alarms"].map((tab) => (
           <button
             key={tab}
@@ -130,7 +126,7 @@ export default function TasksScreen() {
               "Tasks"
             ) : (
               <>
-                <Clock className="inline w-4 h-4 mr-1 align-text-bottom" />
+                <Clock className="inline w-4 h-4 mr-1 align-text-bottom" />{" "}
                 Alarms
               </>
             )}
@@ -138,8 +134,21 @@ export default function TasksScreen() {
         ))}
       </div>
 
-      {/* Add Button */}
-      <div className="flex mb-4">
+      {/* Filter + Add */}
+      <div className="flex items-center justify-between mb-3 gap-3">
+        {activeTab === "tasks" && (
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="bg-[#1e1e1e] border border-gray-700 text-sm text-gray-300 px-3 py-2 rounded-lg focus:outline-none"
+          >
+            <option value="all">All Priorities</option>
+            <option value="high">High Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="low">Low Priority</option>
+          </select>
+        )}
+
         <button
           onClick={openAdd}
           className="ml-auto p-2 bg-purple-600 rounded-full hover:bg-purple-700 transition"
@@ -149,14 +158,15 @@ export default function TasksScreen() {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto pr-1 space-y-3">
+      <div className="flex-1 overflow-y-auto space-y-3 pb-20">
         {activeTab === "tasks"
-          ? tasks.map((t) => (
+          ? visibleTasks.map((t) => (
               <TaskCard
                 key={t.task_id}
                 task={t}
                 onOptions={() => setOptionsItem({ ...t, type: "tasks" })}
                 onEdit={() => openEdit(t)}
+                onOpenDetail={() => setDetailItem({ ...t, type: "tasks" })}
               />
             ))
           : alarms.map((a) => (
@@ -165,45 +175,51 @@ export default function TasksScreen() {
                 alarm={a}
                 onOptions={() => setOptionsItem({ ...a, type: "alarms" })}
                 onEdit={() => openEdit(a)}
+                onOpenDetail={() => setDetailItem({ ...a, type: "alarms" })}
               />
             ))}
       </div>
 
-      {/* Options Overlay */}
+      {/* Overlays */}
       {optionsItem && (
         <OptionsOverlay
-          onEdit={() => {
-            openEdit(optionsItem);
-          }}
+          onEdit={() => openEdit(optionsItem)}
           onDelete={onDelete}
           onClose={() => setOptionsItem(null)}
         />
       )}
 
-      {/* Add/Edit Overlay */}
       {addEditProps && (
         <AddEditOverlay
           mode={addEditProps.mode}
           item={addEditProps.item}
           onSave={onSave}
-          onCancel={closeAddEdit}
+          onCancel={() => setAddEditProps(null)}
         />
       )}
 
-      {/* Undo Toast */}
-      {undoInfo && (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-gray-800 px-4 py-2 rounded-xl flex items-center gap-4 shadow-lg">
-          <span className="text-sm text-gray-200">
-            {undoInfo.type === "tasks" ? "Task" : "Alarm"} deleted
-          </span>
-          <button
-            onClick={undoDelete}
-            className="text-purple-400 underline text-sm"
-          >
-            Undo
-          </button>
-        </div>
+      {detailItem && (
+        <DetailOverlay
+          mode={detailItem.type}
+          item={detailItem}
+          onEdit={() => openEdit(detailItem)}
+          onDelete={() => {
+            setOptionsItem(detailItem);
+            setDetailItem(null);
+          }}
+          onClose={() => setDetailItem(null)}
+        />
       )}
+
+      <UndoManager
+        toasts={undoToasts}
+        onUndo={applyUndo}
+        onCancel={(id) =>
+          setUndoToasts((prev) => prev.filter((t) => t.id !== id))
+        }
+      />
+
+      {loading && <LoadingSpinner />}
     </div>
   );
 }

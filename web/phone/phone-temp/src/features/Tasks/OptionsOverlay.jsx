@@ -1,27 +1,27 @@
-// src/components/OptionsOverlay.jsx
+// src/features/Tasks/OptionsOverlay.jsx
 import React from "react";
-import { Trash, PencilSimple } from "phosphor-react";
 
-export default function OptionsOverlay({ onEdit, onDelete, onClose }) {
+export default function OptionsOverlay({ onEdit, onDelete, onClose, loading }) {
   return (
-    <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-      <div className="bg-[#1c1c1c] border border-gray-700 p-5 rounded-xl w-72 space-y-4">
-        <h3 className="text-lg font-semibold mb-2">More Options</h3>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-60 px-6">
+      <div className="bg-[#1e1e1e] rounded-xl p-4 w-full max-w-xs text-sm shadow-xl border border-[#333]">
+        <div className="text-white font-medium mb-3">Quick Actions</div>
         <button
-          className="flex items-center gap-2 text-left w-full text-gray-300 hover:text-white"
           onClick={onEdit}
+          className="w-full py-2 rounded-md bg-purple-600 hover:bg-purple-700 transition text-white mb-2"
         >
-          <PencilSimple size={16} /> Edit
+          Edit
         </button>
         <button
-          className="flex items-center gap-2 text-left w-full text-red-400 hover:text-red-600"
           onClick={onDelete}
+          disabled={loading}
+          className="w-full py-2 rounded-md bg-red-600 hover:bg-red-700 transition text-white mb-2"
         >
-          <Trash size={16} /> Delete
+          {loading ? "Deleting..." : "Delete"}
         </button>
         <button
-          className="w-full py-2 mt-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl"
           onClick={onClose}
+          className="w-full py-2 rounded-md bg-gray-700 hover:bg-gray-600 transition text-white"
         >
           Cancel
         </button>
