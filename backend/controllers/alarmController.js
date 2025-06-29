@@ -117,6 +117,17 @@ exports.getAlarms = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error.' });
   }
 };
+//alarmtoogle
+exports.toggleAlarmActive = async (req, res) => {
+  const alarm = await Alarm.findByPk(req.params.id);
+  if (!alarm) return res.status(404).json({ error: "Not found" });
+  if (alarm.user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
+
+  alarm.is_active = !alarm.is_active;
+  await alarm.save();
+
+  res.json({ message: "Toggled", alarm });
+};
 
 /**
  * Get a specific alarm by its ID.

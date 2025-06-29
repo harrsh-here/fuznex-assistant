@@ -17,7 +17,8 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
-
+// Add toggleAlarm as a method on the api instance
+api.toggleAlarm = (id) => api.put(`/alarms/${id}/toggle`);
 // Handle 401 errors and refresh the token
 api.interceptors.response.use(
   (response) => response,
@@ -45,7 +46,7 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-
+         
     return Promise.reject(error);
   }
 );

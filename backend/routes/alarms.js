@@ -8,5 +8,6 @@ router.get('/', verifyUser, alarmController.getAlarms);
 router.get('/:id', verifyUser, alarmController.getAlarmById);
 router.put('/:id', verifyUser, alarmController.updateAlarm);
 router.delete('/:id', verifyUser, alarmController.deleteAlarm);
+router.put('/:id/toggle', verifyUser, alarmController.toggleAlarm);
 
 module.exports = router;
