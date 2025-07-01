@@ -42,9 +42,12 @@ export default function AlarmCard({ alarm, onOptions, onEdit, onOpenDetail, relo
         >
           <Alarm size={18} className="text-purple-400 mt-1" />
           <div className="min-w-0">
-            <div className="text-sm font-medium text-white truncate">
-              {alarm.label || "Unnamed Alarm"}
-            </div>
+           <div className="text-sm font-medium text-white truncate" title={alarm.label}>
+  {(alarm.label || "Unnamed Alarm").length > 15
+    ? (alarm.label || "Unnamed Alarm").slice(0, 15) + "..."
+    : alarm.label || "Unnamed Alarm"}
+</div>
+
             <div className="text-xs text-gray-400">{alarmTimeDisplay}</div>
             {alarm.repeat_pattern && (
               <div className="text-xs text-gray-500 truncate">

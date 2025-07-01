@@ -5,13 +5,13 @@ export default function DetailOverlay({ item, mode, onEdit, onDelete, onClose })
   const isTask = mode === "tasks";
   const detail = item || {};
 
-  const getField = (value) => {
-    return value === undefined || value === null || value === "" ? "N/A" : value;
-  };
+  const getField = (value) =>
+    value === undefined || value === null || value === "" ? "N/A" : value;
 
   return (
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 px-4">
-      <div className="w-full max-w-md bg-[#1e1e1e] border border-[#333] rounded-2xl p-6 shadow-lg relative">
+      <div className="w-full max-w-md bg-[#1e1e1e] border border-[#333] rounded-2xl p-6 shadow-lg relative text-sm text-gray-300">
+        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-2 right-3 text-gray-400 hover:text-red-400 text-lg"
@@ -23,31 +23,71 @@ export default function DetailOverlay({ item, mode, onEdit, onDelete, onClose })
           {isTask ? "Task Details" : "Alarm Details"}
         </h2>
 
-        <div className="space-y-2 text-sm text-gray-300">
+        <div className="space-y-3">
+          {/* Title/Label */}
+          <div>
+            <strong>{isTask ? "Title" : "Label"}:</strong>
+            <div className="text-white mt-1 line-clamp-3 leading-snug break-words">
+              {getField(isTask ? detail.title : detail.label)}
+            </div>
+          </div>
+
+          {/* Description (for tasks only) */}
+          {isTask && (
+            <div>
+              <strong>Description:</strong>
+              <div className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap">
+                {getField(detail.description)}
+              </div>
+            </div>
+          )}
+
+          {/* Common Fields */}
+          <div>
+            <strong>Status:</strong>{" "}
+            {isTask
+              ? detail.is_completed
+                ? "Completed"
+                : "Pending"
+              : detail.is_active
+              ? "Active"
+              : "Inactive"}
+          </div>
+
           {isTask ? (
             <>
-              <div><strong>Title:</strong> {getField(detail.title)}</div>
-              <div><strong>Description:</strong> {getField(detail.description)}</div>
-              <div><strong>Status:</strong> {detail.is_completed ? "Completed" : "Pending"}</div>
-              <div><strong>Priority:</strong> {getField(detail.priority)}</div>
+              <div>
+                <strong>Priority:</strong> {getField(detail.priority)}
+              </div>
               <div>
                 <strong>Created:</strong>{" "}
-                {detail.created_at ? moment(detail.created_at).format("MMM D, YYYY • h:mm A") : "N/A"}
+                {detail.created_at
+                  ? moment(detail.created_at).format("MMM D, YYYY • h:mm A")
+                  : "N/A"}
               </div>
               <div>
                 <strong>Due:</strong>{" "}
-                {detail.due_date ? moment(detail.due_date).format("MMM D, YYYY • h:mm A") : "N/A"}
+                {detail.due_date
+                  ? moment(detail.due_date).format("MMM D, YYYY • h:mm A")
+                  : "N/A"}
               </div>
             </>
           ) : (
             <>
-              <div><strong>Label:</strong> {getField(detail.label)}</div>
-              <div><strong>Time:</strong> {detail.alarm_time ? moment(detail.alarm_time).format("h:mm A") : "N/A"}</div>
-              <div><strong>Status:</strong> {detail.is_active ? "Active" : "Inactive"}</div>
-              <div><strong>Repeat:</strong> {getField(detail.repeat_pattern)}</div>
+              <div>
+                <strong>Time:</strong>{" "}
+                {detail.alarm_time
+                  ? moment(detail.alarm_time).format("h:mm A")
+                  : "N/A"}
+              </div>
+              <div>
+                <strong>Repeat:</strong> {getField(detail.repeat_pattern)}
+              </div>
               <div>
                 <strong>Created:</strong>{" "}
-                {detail.created_at ? moment(detail.created_at).format("MMM D, YYYY • h:mm A") : "N/A"}
+                {detail.created_at
+                  ? moment(detail.created_at).format("MMM D, YYYY • h:mm A")
+                  : "N/A"}
               </div>
             </>
           )}

@@ -1,4 +1,3 @@
-// src/features/Tasks/TaskCard.jsx
 import React, { useState } from "react";
 import { DotsThreeVertical } from "phosphor-react";
 import moment from "moment";
@@ -23,14 +22,25 @@ export default function TaskCard({
     setIsToggling(false);
   };
 
+  const getPriorityDotColor = () => {
+    switch (task.priority) {
+      case "high":
+        return "bg-red-500";
+      case "medium":
+        return "bg-yellow-400";
+      default:
+        return null;
+    }
+  };
+
   return (
     <div
       className={`bg-[#1e1e1e] px-4 py-3 rounded-2xl border border-[#2a2a2a] shadow space-y-1 hover:border-purple-600`}
     >
       <div className="flex justify-between items-start">
         <div className="flex items-start gap-3 flex-1">
-          {/* ✅ Independent checkbox, no detail trigger */}
-          <div className="w-4 h-4 mt-1">
+          {/* ✅ Independent checkbox */}
+          <div className="flex flex-col items-center gap-1 mt-1 w-4">
             {isToggling ? (
               <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
             ) : (
@@ -40,6 +50,13 @@ export default function TaskCard({
                 onChange={handleCheckboxClick}
                 className="accent-purple-600 w-4 h-4 cursor-pointer"
               />
+            )}
+            {/* Priority Dot */}
+            {getPriorityDotColor() && (
+              <div
+                className={`w-2 h-2 rounded-full ${getPriorityDotColor()}`}
+                title={`Priority: ${task.priority}`}
+              ></div>
             )}
           </div>
 
@@ -54,7 +71,9 @@ export default function TaskCard({
               }`}
               title={task.title}
             >
-              {task.title}
+              {task.title.length > 30
+                ? task.title.slice(0, 20) + "..."
+                : task.title}
             </div>
 
             {task.description && (
@@ -62,8 +81,8 @@ export default function TaskCard({
                 className="text-xs text-gray-400 truncate"
                 title={task.description}
               >
-                {task.description.length > 50
-                  ? task.description.slice(0, 50) + "..."
+                {task.description.length > 5
+                  ? task.description.slice(0, 25) + "..."
                   : task.description}
               </div>
             )}

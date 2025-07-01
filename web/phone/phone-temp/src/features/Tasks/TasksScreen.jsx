@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Clock } from "phosphor-react";
+import { Plus, Clock, CaretDown } from "phosphor-react";
 import api from "../../api/api";
 
 import TaskCard from "./TaskCard";
@@ -15,6 +15,7 @@ export default function TasksScreen() {
   const [tasks, setTasks] = useState([]);
   const [alarms, setAlarms] = useState([]);
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [showPriorityMenu, setShowPriorityMenu] = useState(false);
   const [optionsItem, setOptionsItem] = useState(null);
   const [addEditProps, setAddEditProps] = useState(null);
   const [detailItem, setDetailItem] = useState(null);
@@ -118,7 +119,6 @@ export default function TasksScreen() {
       completed_at: !task.is_completed ? new Date() : null,
     };
 
-    // Optimistic update
     setTasks((prev) =>
       prev.map((t) => (t.task_id === task.task_id ? updatedTask : t))
     );
@@ -139,6 +139,13 @@ export default function TasksScreen() {
     priorityFilter === "all"
       ? tasks
       : tasks.filter((t) => t.priority === priorityFilter);
+
+  const priorityOptions = [
+    { label: "All Priorities", value: "all" },
+    { label: "High Priority", value: "high" },
+    { label: "Medium Priority", value: "medium" },
+    { label: "Low Priority", value: "low" },
+  ];
 
   return (
     <div className="flex flex-col h-full px-5 py-6 pt-12 text-white overflow-hidden relative">
@@ -168,18 +175,42 @@ export default function TasksScreen() {
       </div>
 
       {/* Filter + Add */}
-      <div className="flex items-center justify-between mb-3 gap-3">
+      <div className="flex items-center justify-between mb-3 gap-3 relative">
         {activeTab === "tasks" && (
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="bg-[#1e1e1e] border border-gray-700 text-sm text-gray-300 px-3 py-2 rounded-lg focus:outline-none"
-          >
-            <option value="all">All Priorities</option>
-            <option value="high">High Priority</option>
-            <option value="medium">Medium Priority</option>
-            <option value="low">Low Priority</option>
-          </select>
+          <div className="relative">
+            <button
+              onClick={() => setShowPriorityMenu(!showPriorityMenu)}
+              className="flex items-center gap-1 bg-[#1e1e1e] border border-gray-700 text-sm text-gray-300 px-3 py-2 rounded-lg hover:border-purple-500"
+            >
+              Priority:{" "}
+              {
+                priorityOptions.find((opt) => opt.value === priorityFilter)
+                  ?.label
+              }
+              <CaretDown size={14} />
+            </button>
+
+            {showPriorityMenu && (
+              <div className="absolute z-40 mt-2 w-48 bg-[#1e1e1e] border border-[#333] rounded-xl shadow-lg overflow-hidden">
+                {priorityOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setPriorityFilter(option.value);
+                      setShowPriorityMenu(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-600 hover:text-white transition ${
+                      option.value === priorityFilter
+                        ? "text-purple-400"
+                        : "text-gray-300"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         <button
