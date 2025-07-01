@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Plus, Clock } from "phosphor-react";
 import api from "../../api/api";
 
@@ -21,11 +21,14 @@ export default function TasksScreen() {
   const [undoToasts, setUndoToasts] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const toastTimeouts = useRef({});
+
   useEffect(() => {
     loadAll();
   }, []);
 
   const loadAll = async () => {
+    setLoading(true);
     try {
       const [tasksRes, alarmsRes] = await Promise.all([
         api.get("/todos"),
@@ -35,6 +38,8 @@ export default function TasksScreen() {
       setAlarms(sortAlarms(alarmsRes.data));
     } catch (err) {
       console.error("Failed to fetch:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,47 +74,65 @@ export default function TasksScreen() {
     if (!optionsItem) return;
     const { type, task_id, alarm_id, title, label } = optionsItem;
     const id = type === "tasks" ? task_id : alarm_id;
+    const toastId = Date.now();
+    const route = type === "tasks" ? "todos" : "alarms";
 
-    const newItem = { ...optionsItem };
-    setOptionsItem(null); // ✅ Immediately close the overlay
+    setOptionsItem(null);
     setLoading(true);
 
-    const toastId = Date.now();
-    setUndoToasts((prev) => [
-      { id: toastId, type, itemId: id, title: title || label },
-      ...prev.slice(0, 2),
-    ]);
+    const toast = { id: toastId, type, itemId: id, title: title || label };
+    setUndoToasts((prev) => [toast, ...prev.slice(0, 2)]);
 
-    // Wait 5s → if not undone, delete
-    setTimeout(async () => {
-      const stillExists = undoToasts.find((t) => t.id === toastId);
-      if (!stillExists) return;
-
-      const route = type === "tasks" ? "todos" : "alarms";
+    toastTimeouts.current[toastId] = setTimeout(async () => {
       try {
         await api.delete(`/${route}/${id}`);
-        setUndoToasts((prev) => prev.filter((t) => t.id !== toastId));
-        loadAll();
       } catch (err) {
         alert("Error deleting item");
       } finally {
+        setUndoToasts((prev) => prev.filter((t) => t.id !== toastId));
+        delete toastTimeouts.current[toastId];
         setLoading(false);
+        loadAll();
       }
     }, 5000);
   };
 
-  const applyUndo = async (toast) => {
-    const { type, itemId } = toast;
-    const route = type === "tasks" ? "todos/restore" : "alarms/restore";
-    setLoading(true);
+  const applyUndo = (toast) => {
+    clearTimeout(toastTimeouts.current[toast.id]);
+    delete toastTimeouts.current[toast.id];
+    setUndoToasts((prev) => prev.filter((t) => t.id !== toast.id));
+    setLoading(false);
+  };
+
+  const onCancelUndo = (id) => {
+    clearTimeout(toastTimeouts.current[id]);
+    delete toastTimeouts.current[id];
+    setUndoToasts((prev) => prev.filter((t) => t.id !== id));
+    setLoading(false);
+  };
+
+  const onToggleComplete = async (task) => {
+    const updatedTask = {
+      ...task,
+      is_completed: !task.is_completed,
+      completed_at: !task.is_completed ? new Date() : null,
+    };
+
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) => (t.task_id === task.task_id ? updatedTask : t))
+    );
+
     try {
-      await api.post(`/${route}/${itemId}`);
-      setUndoToasts((prev) => prev.filter((t) => t.id !== toast.id));
+      await api.put(`/todos/${task.task_id}`, {
+        is_completed: updatedTask.is_completed,
+        completed_at: updatedTask.completed_at,
+      });
       loadAll();
     } catch (err) {
-      alert("Undo failed.");
+      alert("Failed to update task status");
+      console.error(err);
     }
-    setLoading(false);
   };
 
   const visibleTasks =
@@ -169,25 +192,40 @@ export default function TasksScreen() {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto space-y-3 pb-20">
-        {activeTab === "tasks"
-          ? visibleTasks.map((t) => (
-              <TaskCard
-                key={t.task_id}
-                task={t}
-                onOptions={() => setOptionsItem({ ...t, type: "tasks" })}
-                onEdit={() => openEdit(t)}
-                onOpenDetail={() => setDetailItem({ ...t, type: "tasks" })}
-              />
-            ))
-          : alarms.map((a) => (
-              <AlarmCard
-                key={a.alarm_id}
-                alarm={a}
-                onOptions={() => setOptionsItem({ ...a, type: "alarms" })}
-                onEdit={() => openEdit(a)}
-                onOpenDetail={() => setDetailItem({ ...a, type: "alarms" })}
-              />
-            ))}
+        {loading ? (
+          [...Array(3)].map((_, idx) => (
+            <div
+              key={idx}
+              className="h-[72px] rounded-xl bg-[#1e1e1e] animate-pulse border border-[#2a2a2a]"
+            >
+              <div className="p-4 space-y-2">
+                <div className="w-1/2 h-3 bg-gray-700 rounded" />
+                <div className="w-1/3 h-2 bg-gray-800 rounded" />
+              </div>
+            </div>
+          ))
+        ) : activeTab === "tasks" ? (
+          visibleTasks.map((t) => (
+            <TaskCard
+              key={t.task_id}
+              task={t}
+              onOptions={() => setOptionsItem({ ...t, type: "tasks" })}
+              onEdit={() => openEdit(t)}
+              onOpenDetail={() => setDetailItem({ ...t, type: "tasks" })}
+              onToggleComplete={onToggleComplete}
+            />
+          ))
+        ) : (
+          alarms.map((a) => (
+            <AlarmCard
+              key={a.alarm_id}
+              alarm={a}
+              onOptions={() => setOptionsItem({ ...a, type: "alarms" })}
+              onEdit={() => openEdit(a)}
+              onOpenDetail={() => setDetailItem({ ...a, type: "alarms" })}
+            />
+          ))
+        )}
       </div>
 
       {/* Overlays */}
@@ -224,9 +262,7 @@ export default function TasksScreen() {
       <UndoManager
         toasts={undoToasts}
         onUndo={applyUndo}
-        onCancel={(id) =>
-          setUndoToasts((prev) => prev.filter((t) => t.id !== id))
-        }
+        onCancel={onCancelUndo}
       />
 
       {loading && <LoadingSpinner />}
