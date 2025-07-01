@@ -19,7 +19,6 @@ export default function AlarmCard({ alarm, onOptions, onEdit, onOpenDetail, relo
     setLoading(true);
     try {
       console.log("Toggling alarm:", alarm.alarm_id);
-await api.put(`/alarms/${alarm.alarm_id}/toggle`);
 
       await api.put(`/alarms/${alarm.alarm_id}/toggle`);
       if (reload) reload(); // optional, in case you want full data refresh
