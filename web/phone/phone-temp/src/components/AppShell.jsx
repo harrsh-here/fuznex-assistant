@@ -25,13 +25,13 @@ export default function AppShell({ activePath, onNavigate, children }) {
       <div className="flex-1 overflow-y-auto">{children}</div>
 
     {/* Bottom Navigation (non-floating) */}
-<div className="flex items-center justify-center gap-0.1 px-2 py-1.5 border-t border-[#2a2a2a] bg-transparent text-gray-400 overflow-hidden">
-
+{/* Bottom Navigation (fixed layout, icon spacing corrected) */}
+<div className="grid grid-cols-6 items-center px-2 py-1.5 border-t border-[#2a2a2a] bg-transparent text-gray-400">
   {tabs.map((tab) => (
     <button
       key={tab.path}
       onClick={() => onNavigate(tab.path)}
-      className={`bg-transparent flex flex-col items-center text-[11px] transition-all duration-200 ${
+      className={`flex flex-col items-center text-[11px] transition-all duration-200 bg-transparent ${
         activePath === tab.path ? "text-purple-500" : "text-gray-400"
       }`}
     >
@@ -40,6 +40,7 @@ export default function AppShell({ activePath, onNavigate, children }) {
     </button>
   ))}
 </div>
+
     </div>
   );
 }
