@@ -1,6 +1,9 @@
 const TodoTask = require('../models/TodoTask');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const { Notification } = require("../models/Notifications");
+
+
 
 // Create a new task
 exports.createTodo = async (req, res) => {
@@ -38,6 +41,16 @@ exports.createTodo = async (req, res) => {
       is_archived: is_archived || false,
       external_id: external_id || null
     });
+// After task is successfully created
+await Notification.create({
+  user_id: req.user.id,
+  task_id: newTask.task_id,
+  title: "New Task Added",
+  message: `Task "${newTask.title}" created with priority ${newTask.priority}`,
+  reminder_time: newTask.due_date || null,
+  is_important: newTask.priority === "high",
+  status: "pending",
+});
 
     res.status(201).json({ message: 'Task created successfully.', task: newTask });
   } catch (error) {

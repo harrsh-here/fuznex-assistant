@@ -7,7 +7,8 @@ export default function AlarmCard({ alarm, onOptions, onEdit, onOpenDetail, relo
   const [isActive, setIsActive] = useState(alarm.is_active);
   const [loading, setLoading] = useState(false);
 
-  const alarmTimeDisplay = moment(alarm.alarm_time).format("h:mm A");
+  // ✅ Interpret backend string as local time (not UTC)
+  const alarmTimeDisplay = moment(alarm.alarm_time, "YYYY-MM-DD HH:mm:ss").format("h:mm A");
 
   const handleToggle = async (e) => {
     e.stopPropagation();
@@ -18,10 +19,8 @@ export default function AlarmCard({ alarm, onOptions, onEdit, onOpenDetail, relo
 
     setLoading(true);
     try {
-      console.log("Toggling alarm:", alarm.alarm_id);
-
       await api.put(`/alarms/${alarm.alarm_id}/toggle`);
-      if (reload) reload(); // optional, in case you want full data refresh
+      if (reload) reload();
     } catch (err) {
       console.error("Toggle failed:", err);
       setIsActive(!newState); // Revert toggle if failed
@@ -42,17 +41,15 @@ export default function AlarmCard({ alarm, onOptions, onEdit, onOpenDetail, relo
         >
           <Alarm size={18} className="text-purple-400 mt-1" />
           <div className="min-w-0">
-           <div className="text-sm font-medium text-white truncate" title={alarm.label}>
-  {(alarm.label || "Unnamed Alarm").length > 15
-    ? (alarm.label || "Unnamed Alarm").slice(0, 15) + "..."
-    : alarm.label || "Unnamed Alarm"}
-</div>
+            <div className="text-sm font-medium text-white truncate" title={alarm.label}>
+              {(alarm.label || "Unnamed Alarm").length > 15
+                ? (alarm.label || "Unnamed Alarm").slice(0, 15) + "..."
+                : alarm.label || "Unnamed Alarm"}
+            </div>
 
             <div className="text-xs text-gray-400">{alarmTimeDisplay}</div>
             {alarm.repeat_pattern && (
-              <div className="text-xs text-gray-500 truncate">
-                {alarm.repeat_pattern}
-              </div>
+              <div className="text-xs text-gray-500 truncate">{alarm.repeat_pattern}</div>
             )}
           </div>
         </div>

@@ -23,7 +23,7 @@ const suggestions = [
   "Kavita",
 ];
 
-export default function HomeScreen({ onNavigate }) {
+export default function HomeScreen({ onNavigate, user }) {
   const [expandedText, setExpandedText] = useState(null);
   const [inputText, setInputText] = useState("");
   const [responseText, setResponseText] = useState(null);
@@ -31,7 +31,7 @@ export default function HomeScreen({ onNavigate }) {
   const inputRef = useRef(null);
   const [volume, setVolume] = useState(40);
   const [brightness, setBrightness] = useState(70);
-
+   const { name, email, avatar_url } = user || {};
   const handleBoxClick = (text) => setExpandedText(text);
   const handleClose = () => setExpandedText(null);
 
@@ -126,7 +126,7 @@ Naa hone se sab choor-choor.`}
     <div className="flex flex-col h-full justify-between px-5 py-6 pt-12 bg-gradient-to-br from-[#0f0f0f] via-[#181818] to-[#111111] text-white relative overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent hover:scrollbar-thumb-gray-600">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-semibold">Hello, Harsh 👋</h2>
+          <h2 className="text-xl font-semibold">Hello, {(name?.split(" ")[0]) || "Unknown User"}👋</h2>
           <p className="text-xs text-gray-400">What would you like me to do?</p>
         </div>
         <button

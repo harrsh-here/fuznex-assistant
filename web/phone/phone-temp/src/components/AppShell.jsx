@@ -7,11 +7,12 @@ import {
   History,
   User,
 } from "lucide-react";
+import { NotePencil } from "phosphor-react";
 
 const tabs = [
   { path: "home", icon: Home, label: "Home" },
   { path: "chat", icon: MessageSquare, label: "Chat" },
-  { path: "tasks", icon: CheckSquare, label: "Tasks" },
+  { path: "plans", icon: NotePencil, label: "Planner" },
   { path: "fitness", icon: Dumbbell, label: "Fitness" },
   { path: "history", icon: History, label: "History" },
   { path: "profile", icon: User, label: "Profile" },
@@ -24,7 +25,8 @@ export default function AppShell({ activePath, onNavigate, children }) {
       <div className="flex-1 overflow-y-auto">{children}</div>
 
     {/* Bottom Navigation (non-floating) */}
-<div className="w-full border-t border-[#2a2a2a] bg-transparent px-0 py-1.5 flex justify-around items-center text-gray-400">
+<div className="flex items-center justify-center gap-0.1 px-2 py-1.5 border-t border-[#2a2a2a] bg-transparent text-gray-400 overflow-hidden">
+
   {tabs.map((tab) => (
     <button
       key={tab.path}

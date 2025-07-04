@@ -1,5 +1,7 @@
 const moment = require('moment');
 const Alarm = require('../models/Alarm');
+const { Notification } = require("../models/Notifications");
+
 
 /**
  * Helper function to calculate the final alarm datetime.
@@ -96,6 +98,15 @@ exports.createAlarm = async (req, res) => {
       is_active: typeof is_active !== 'undefined' ? is_active : true,
       repeat_pattern: repeat_pattern || 'once'
     });
+await Notification.create({
+  user_id: req.user.id,
+  alarm_id: newAlarm.alarm_id,
+  title: "Alarm Set",
+  message: `Alarm "${newAlarm.label}" scheduled for ${newAlarm.alarm_time}`,
+  reminder_time: newAlarm.alarm_time,
+  is_important: false,
+  status: "pending",
+});
 
     res.status(201).json({ message: 'Alarm created successfully.', alarm: newAlarm });
   } catch (error) {

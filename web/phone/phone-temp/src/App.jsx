@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "./api/api";
 import AppShell from "./components/AppShell";
 import HomeScreen from "./features/Home/HomeScreen";
-import TasksScreen from "./features/Tasks/TasksScreen";
+import PlansScreen from "./features/Plans/PlansScreen";
 import FitnessScreen from "./features/Fitness/FitnessScreen";
 import HistoryScreen from "./features/History/HistoryScreen";
 import ChatScreen from "./features/Home/ChatScreen";
@@ -94,12 +94,12 @@ export default function App() {
 
   const renderScreen = () => {
     switch (activePath) {
-      case "tasks":
-        return <TasksScreen />;
+      case "plans":
+        return <PlansScreen />;
       case "chat":
         return <ChatScreen />;
       case "home":
-        return <HomeScreen onNavigate={navigateTo} />;
+        return <HomeScreen onNavigate={navigateTo}  user={user} />;
       case "fitness":
         return <FitnessScreen />;
       case "history":

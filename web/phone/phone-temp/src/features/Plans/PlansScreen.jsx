@@ -10,7 +10,7 @@ import DetailOverlay from "./DetailOverlay";
 import UndoManager from "./UndoManager";
 import LoadingSpinner from "./LoadingSpinner";
 
-export default function TasksScreen() {
+export default function PlansScreen() {
   const [activeTab, setActiveTab] = useState("tasks");
   const [tasks, setTasks] = useState([]);
   const [alarms, setAlarms] = useState([]);
@@ -44,17 +44,57 @@ export default function TasksScreen() {
     }
   };
 
-  const sortTasks = (items) => {
-    return [...items]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .sort((a, b) => a.is_completed - b.is_completed);
-  };
+const sortTasks = (items) => {
+  const now = new Date();
+
+  const dueToday = [];
+  const upcoming = [];
+  const overdue = [];
+  const noDueDate = [];
+  const completed = [];
+
+  items.forEach((task) => {
+    const due = task.due_date ? new Date(task.due_date) : null;
+
+    if (task.is_completed) {
+      completed.push(task);
+    } else if (!due) {
+      noDueDate.push(task);
+    } else if (
+      due.getDate() === now.getDate() &&
+      due.getMonth() === now.getMonth() &&
+      due.getFullYear() === now.getFullYear()
+    ) {
+      dueToday.push(task);
+    } else if (due > now) {
+      upcoming.push(task);
+    } else {
+      overdue.push(task);
+    }
+  });
+
+  // Apply sorting within each group
+  dueToday.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+  upcoming.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+  overdue.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+  noDueDate.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  completed.sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
+
+  return [...dueToday, ...upcoming, ...overdue, ...noDueDate, ...completed];
+};
 
   const sortAlarms = (items) => {
-    return [...items]
-      .sort((a, b) => new Date(b.alarm_time) - new Date(a.alarm_time))
-      .sort((a, b) => b.is_active - a.is_active);
-  };
+  const active = items
+    .filter((a) => a.is_active)
+    .sort((a, b) => new Date(a.alarm_time || 0) - new Date(b.alarm_time || 0));
+
+  const inactive = items
+    .filter((a) => !a.is_active)
+    .sort((a, b) => new Date(b.alarm_time || 0) - new Date(a.alarm_time || 0));
+
+  return [...active, ...inactive];
+};
+
 
   const openAdd = () => {
     setAddEditProps({ mode: activeTab, item: null });
