@@ -10,25 +10,32 @@ export default function AuthSuccess({ onAuth }) {
     const refreshToken = params.get("refreshToken");
 
     if (!accessToken || !refreshToken) {
-      setStatus("Missing tokens. Redirecting...");
+      setStatus("Missing access tokens. Redirecting to login...");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2000);
       return;
     }
 
-    // Store tokens
+    // Store in localStorage
     localStorage.setItem("token", accessToken);
     localStorage.setItem("refreshToken", refreshToken);
 
-    // Fetch user profile and log them in
-    api
-      .get("/users/profile", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
+    // Attach token manually since this is before api interceptor
+    api.get("/users/profile", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
       .then(({ data }) => {
-        onAuth(data); // Calls the parent App to update state
+        onAuth(data);
       })
       .catch((err) => {
-        console.error("AuthSuccess error:", err);
-        setStatus("Failed to fetch profile. Please login again.");
+        console.error("[AuthSuccess] Profile fetch failed:", err);
+        setStatus("Login failed. Redirecting...");
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 2000);
       });
   }, [onAuth]);
 

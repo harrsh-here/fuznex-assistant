@@ -1,5 +1,7 @@
+// ✅ Final: Shimmer added for initial + change loads, silent refresh fully abstracted, also shimmer only per item, not whole window
+
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Clock, CaretDown } from "phosphor-react";
+import { Plus, Clock, CaretDown, Trash } from "phosphor-react";
 import api from "../../api/api";
 
 import TaskCard from "./TaskCard";
@@ -20,90 +22,55 @@ export default function PlansScreen() {
   const [addEditProps, setAddEditProps] = useState(null);
   const [detailItem, setDetailItem] = useState(null);
   const [undoToasts, setUndoToasts] = useState([]);
-  const [loading, setLoading] = useState(false);
-
+  const [loading, setLoading] = useState(true);
+  const [shimmerIds, setShimmerIds] = useState([]);
+  const [fadeInIds, setFadeInIds] = useState([]);
   const toastTimeouts = useRef({});
 
   useEffect(() => {
     loadAll();
+    const interval = setInterval(() => loadAll(true), 7000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadAll = async () => {
-    setLoading(true);
+  const loadAll = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const [tasksRes, alarmsRes] = await Promise.all([
         api.get("/todos"),
         api.get("/alarms"),
       ]);
-      setTasks(sortTasks(tasksRes.data));
-      setAlarms(sortAlarms(alarmsRes.data));
+      const newTasks = sortTasks(tasksRes.data);
+      const newAlarms = sortAlarms(alarmsRes.data);
+      const changedIds = [
+        ...getChangedIds(tasks, newTasks, "task_id"),
+        ...getChangedIds(alarms, newAlarms, "alarm_id"),
+      ];
+
+      if (!isSilent && changedIds.length > 0) {
+        setFadeInIds(changedIds);
+        setTimeout(() => setFadeInIds([]), 800);
+      }
+
+      if (changedIds.length > 0) {
+        setShimmerIds(changedIds);
+        setTimeout(() => setShimmerIds([]), 1000);
+      }
+
+      setTasks(newTasks);
+      setAlarms(newAlarms);
     } catch (err) {
       console.error("Failed to fetch:", err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
-const sortTasks = (items) => {
-  const now = new Date();
-
-  const dueToday = [];
-  const upcoming = [];
-  const overdue = [];
-  const noDueDate = [];
-  const completed = [];
-
-  items.forEach((task) => {
-    const due = task.due_date ? new Date(task.due_date) : null;
-
-    if (task.is_completed) {
-      completed.push(task);
-    } else if (!due) {
-      noDueDate.push(task);
-    } else if (
-      due.getDate() === now.getDate() &&
-      due.getMonth() === now.getMonth() &&
-      due.getFullYear() === now.getFullYear()
-    ) {
-      dueToday.push(task);
-    } else if (due > now) {
-      upcoming.push(task);
-    } else {
-      overdue.push(task);
-    }
-  });
-
-  // Apply sorting within each group
-  dueToday.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-  upcoming.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-  overdue.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-  noDueDate.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  completed.sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
-
-  return [...dueToday, ...upcoming, ...overdue, ...noDueDate, ...completed];
-};
-
-  const sortAlarms = (items) => {
-  const active = items
-    .filter((a) => a.is_active)
-    .sort((a, b) => new Date(a.alarm_time || 0) - new Date(b.alarm_time || 0));
-
-  const inactive = items
-    .filter((a) => !a.is_active)
-    .sort((a, b) => new Date(b.alarm_time || 0) - new Date(a.alarm_time || 0));
-
-  return [...active, ...inactive];
-};
-
-
-  const openAdd = () => {
-    setAddEditProps({ mode: activeTab, item: null });
-  };
-
-  const openEdit = (item) => {
-    setAddEditProps({ mode: activeTab, item });
-    setDetailItem(null);
-    setOptionsItem(null);
+  const getChangedIds = (oldList, newList, key) => {
+    const mapOld = new Map(oldList.map((item) => [item[key], JSON.stringify(item)]));
+    return newList
+      .filter((item) => mapOld.get(item[key]) !== JSON.stringify(item))
+      .map((i) => i[key]);
   };
 
   const onSave = () => {
@@ -115,14 +82,14 @@ const sortTasks = (items) => {
     if (!optionsItem) return;
     const { type, task_id, alarm_id, title, label } = optionsItem;
     const id = type === "tasks" ? task_id : alarm_id;
-    const toastId = Date.now();
     const route = type === "tasks" ? "todos" : "alarms";
+    const toastId = Date.now();
 
     setOptionsItem(null);
-    setLoading(true);
-
-    const toast = { id: toastId, type, itemId: id, title: title || label };
-    setUndoToasts((prev) => [toast, ...prev.slice(0, 2)]);
+    setUndoToasts((prev) => [
+      { id: toastId, type, itemId: id, title: title || label },
+      ...prev.slice(0, 2),
+    ]);
 
     toastTimeouts.current[toastId] = setTimeout(async () => {
       try {
@@ -130,56 +97,117 @@ const sortTasks = (items) => {
       } catch (err) {
         alert("Error deleting item");
       } finally {
-        setUndoToasts((prev) => prev.filter((t) => t.id !== toastId));
         delete toastTimeouts.current[toastId];
-        setLoading(false);
+        setUndoToasts((prev) => prev.filter((t) => t.id !== toastId));
         loadAll();
       }
-    }, 5000);
+    }, 3000);
   };
 
   const applyUndo = (toast) => {
     clearTimeout(toastTimeouts.current[toast.id]);
     delete toastTimeouts.current[toast.id];
     setUndoToasts((prev) => prev.filter((t) => t.id !== toast.id));
-    setLoading(false);
+    loadAll();
   };
 
-  const onCancelUndo = (id) => {
+ const onCancelUndo = async (id) => {
+  const pending = pendingDeletions.current[id];
+  if (!pending) return;
+
+  // Clear scheduled deletion
+  if (toastTimeouts.current[id]) {
     clearTimeout(toastTimeouts.current[id]);
     delete toastTimeouts.current[id];
-    setUndoToasts((prev) => prev.filter((t) => t.id !== id));
-    setLoading(false);
-  };
+  }
+
+  try {
+    // Immediate delete
+    await api.delete(`/${pending.route}/${pending.id}`);
+  } catch (err) {
+    console.error("Error force-deleting item:", err);
+    alert("Failed to delete item.");
+    return;
+  }
+
+  // Remove from deletion tracking + toast
+  delete pendingDeletions.current[id];
+  setUndoToasts((prev) => prev.filter((t) => t.id !== id));
+
+  // Refresh data
+  loadAll();
+};
 
   const onToggleComplete = async (task) => {
-    const updatedTask = {
-      ...task,
-      is_completed: !task.is_completed,
-      completed_at: !task.is_completed ? new Date() : null,
-    };
-
-    setTasks((prev) =>
-      prev.map((t) => (t.task_id === task.task_id ? updatedTask : t))
-    );
-
     try {
       await api.put(`/todos/${task.task_id}`, {
-        is_completed: updatedTask.is_completed,
-        completed_at: updatedTask.completed_at,
+        is_completed: !task.is_completed,
+        completed_at: !task.is_completed ? new Date() : null,
       });
       loadAll();
-    } catch (err) {
-      alert("Failed to update task status");
-      console.error(err);
+    } catch {
+      alert("Failed to toggle completion");
     }
   };
 
-  const visibleTasks =
-    priorityFilter === "all"
-      ? tasks
-      : tasks.filter((t) => t.priority === priorityFilter);
+  const deleteSelected = async () => {
+    const isTask = activeTab === "tasks";
+    const route = isTask ? "todos" : "alarms";
+    try {
+      await Promise.all(selectedItems.map((id) => api.delete(`/${route}/${id}`)));
+      cancelSelection();
+      loadAll();
+    } catch {
+      alert("Error deleting selected items");
+    }
+  };
 
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const toggleSelect = (id) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+  const cancelSelection = () => {
+    setSelectedItems([]);
+    setSelectionMode(false);
+  };
+
+  const openEdit = (item) => {
+    setAddEditProps({ mode: activeTab, item });
+    setOptionsItem(null);
+    setDetailItem(null);
+  };
+
+  const openAdd = () => setAddEditProps({ mode: activeTab, item: null });
+
+  const sortTasks = (items) => {
+    const now = new Date();
+    const dueToday = [], upcoming = [], overdue = [], noDueDate = [], completed = [];
+    items.forEach((task) => {
+      const due = task.due_date ? new Date(task.due_date) : null;
+      if (task.is_completed) completed.push(task);
+      else if (!due) noDueDate.push(task);
+      else if (due.toDateString() === now.toDateString()) dueToday.push(task);
+      else if (due > now) upcoming.push(task);
+      else overdue.push(task);
+    });
+    dueToday.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    upcoming.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    overdue.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    noDueDate.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    completed.sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
+    return [...dueToday, ...upcoming, ...overdue, ...noDueDate, ...completed];
+  };
+
+  const sortAlarms = (items) => {
+    const active = items.filter((a) => a.is_active).sort((a, b) => new Date(a.alarm_time) - new Date(b.alarm_time));
+    const inactive = items.filter((a) => !a.is_active).sort((a, b) => new Date(b.alarm_time) - new Date(a.alarm_time));
+    return [...active, ...inactive];
+  };
+
+  const visibleTasks = priorityFilter === "all" ? tasks : tasks.filter((t) => t.priority === priorityFilter);
   const priorityOptions = [
     { label: "All Priorities", value: "all" },
     { label: "High Priority", value: "high" },
@@ -187,49 +215,83 @@ const sortTasks = (items) => {
     { label: "Low Priority", value: "low" },
   ];
 
+  const renderCards = () => {
+    const list = activeTab === "tasks" ? visibleTasks : alarms;
+    const Card = activeTab === "tasks" ? TaskCard : AlarmCard;
+    const idKey = activeTab === "tasks" ? "task_id" : "alarm_id";
+
+    if (loading && list.length === 0) {
+      return [...Array(3)].map((_, i) => (
+        <div
+          key={i}
+          className="h-[72px] rounded-xl bg-[#1e1e1e] border border-[#2a2a2a]"
+        >
+          <div className="p-4 space-y-2">
+            <div className="w-1/2 h-3 bg-gray-700 rounded" />
+            <div className="w-1/3 h-2 bg-gray-800 rounded" />
+          </div>
+        </div>
+      ));
+    }
+
+    return list.map((item) => (
+      <div
+        key={item[idKey]}
+        className={`${
+          shimmerIds.includes(item[idKey])
+            ? "animate-pulse"
+            : fadeInIds.includes(item[idKey])
+            ? "animate-fadeIn"
+            : ""
+        }`}
+      >
+        <Card
+          {...{ [activeTab.slice(0, -1)]: item }}
+          onOptions={() => setOptionsItem({ ...item, type: activeTab })}
+          onEdit={() => openEdit(item)}
+          onOpenDetail={() => setDetailItem({ ...item, type: activeTab })}
+          onToggleComplete={activeTab === "tasks" ? onToggleComplete : undefined}
+          selectionMode={selectionMode}
+          selected={selectedItems.includes(item[idKey])}
+          onSelect={() => toggleSelect(item[idKey])}
+        />
+      </div>
+    ));
+  };
+
   return (
     <div className="flex flex-col h-full px-5 py-6 pt-12 text-white overflow-hidden relative">
       <h2 className="text-2xl font-semibold mb-4">Your Tasks & Alarms</h2>
 
-      {/* Tabs */}
+      {/* Tab Switcher */}
       <div className="flex mb-4 gap-4">
         {["tasks", "alarms"].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              setActiveTab(tab);
+              cancelSelection();
+            }}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
-              activeTab === tab
-                ? "bg-purple-600 text-white"
-                : "bg-[#1e1e1e] text-gray-400"
+              activeTab === tab ? "bg-purple-600 text-white" : "bg-[#1e1e1e] text-gray-400"
             }`}
           >
-            {tab === "tasks" ? (
-              "Tasks"
-            ) : (
-              <>
-                <Clock className="inline w-4 h-4 mr-1 align-text-bottom" /> Alarms
-              </>
-            )}
+            {tab === "tasks" ? "Tasks" : <><Clock className="inline w-4 h-4 mr-1 align-text-bottom" /> Alarms</>}
           </button>
         ))}
       </div>
 
-      {/* Filter + Add */}
+      {/* Filters / Add / Delete Selection */}
       <div className="flex items-center justify-between mb-3 gap-3 relative">
-        {activeTab === "tasks" && (
+        {activeTab === "tasks" && !selectionMode && (
           <div className="relative">
             <button
               onClick={() => setShowPriorityMenu(!showPriorityMenu)}
               className="flex items-center gap-1 bg-[#1e1e1e] border border-gray-700 text-sm text-gray-300 px-3 py-2 rounded-lg hover:border-purple-500"
             >
-              Priority:{" "}
-              {
-                priorityOptions.find((opt) => opt.value === priorityFilter)
-                  ?.label
-              }
+              Priority: {priorityOptions.find((opt) => opt.value === priorityFilter)?.label}
               <CaretDown size={14} />
             </button>
-
             {showPriorityMenu && (
               <div className="absolute z-40 mt-2 w-48 bg-[#1e1e1e] border border-[#333] rounded-xl shadow-lg overflow-hidden">
                 {priorityOptions.map((option) => (
@@ -240,9 +302,7 @@ const sortTasks = (items) => {
                       setShowPriorityMenu(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-600 hover:text-white transition ${
-                      option.value === priorityFilter
-                        ? "text-purple-400"
-                        : "text-gray-300"
+                      option.value === priorityFilter ? "text-purple-400" : "text-gray-300"
                     }`}
                   >
                     {option.label}
@@ -253,51 +313,25 @@ const sortTasks = (items) => {
           </div>
         )}
 
-        <button
-          onClick={openAdd}
-          className="ml-auto p-2 bg-purple-600 rounded-full hover:bg-purple-700 transition"
-        >
-          <Plus size={20} />
-        </button>
-      </div>
-
-      {/* List */}
-      <div className="flex-1 overflow-y-auto space-y-3 pb-20">
-        {loading ? (
-          [...Array(3)].map((_, idx) => (
-            <div
-              key={idx}
-              className="h-[72px] rounded-xl bg-[#1e1e1e] animate-pulse border border-[#2a2a2a]"
-            >
-              <div className="p-4 space-y-2">
-                <div className="w-1/2 h-3 bg-gray-700 rounded" />
-                <div className="w-1/3 h-2 bg-gray-800 rounded" />
-              </div>
-            </div>
-          ))
-        ) : activeTab === "tasks" ? (
-          visibleTasks.map((t) => (
-            <TaskCard
-              key={t.task_id}
-              task={t}
-              onOptions={() => setOptionsItem({ ...t, type: "tasks" })}
-              onEdit={() => openEdit(t)}
-              onOpenDetail={() => setDetailItem({ ...t, type: "tasks" })}
-              onToggleComplete={onToggleComplete}
-            />
-          ))
+        {selectionMode ? (
+          <>
+            <button onClick={deleteSelected} className="ml-auto p-2 bg-red-600 rounded-full hover:bg-red-700">
+              <Trash size={20} />
+            </button>
+            <button onClick={cancelSelection} className="p-2 text-sm text-gray-400 hover:text-white">Cancel</button>
+          </>
         ) : (
-          alarms.map((a) => (
-            <AlarmCard
-              key={a.alarm_id}
-              alarm={a}
-              onOptions={() => setOptionsItem({ ...a, type: "alarms" })}
-              onEdit={() => openEdit(a)}
-              onOpenDetail={() => setDetailItem({ ...a, type: "alarms" })}
-            />
-          ))
+          <button
+            onClick={openAdd}
+            className="ml-auto p-2 bg-purple-600 rounded-full hover:bg-purple-700 transition"
+          >
+            <Plus size={20} />
+          </button>
         )}
       </div>
+
+      {/* Cards List */}
+      <div className="flex-1 overflow-y-auto space-y-3 pb-20">{renderCards()}</div>
 
       {/* Overlays */}
       {optionsItem && (
@@ -330,13 +364,7 @@ const sortTasks = (items) => {
         />
       )}
 
-      <UndoManager
-        toasts={undoToasts}
-        onUndo={applyUndo}
-        onCancel={onCancelUndo}
-      />
-
-      {loading && <LoadingSpinner />}
+      <UndoManager toasts={undoToasts} onUndo={applyUndo} onCancel={onCancelUndo} />
     </div>
   );
 }

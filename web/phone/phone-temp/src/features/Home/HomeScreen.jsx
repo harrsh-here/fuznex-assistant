@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Mic, Send, Bell } from "lucide-react";
+import api from "../../api/api";
+import moment from "moment";
+
 
 const recentActivities = [
   "🔔 Alarm set for 7:00 AM tomorrow.",
@@ -8,7 +11,7 @@ const recentActivities = [
 ];
 
 const upcomingEvents = [
-  "💜 Whisper something to her at 11:11.",
+  "💜 see what at 11:11.",
   "📅 Meeting at 4:00 PM with the AI team.",
   "📝 To-Do: Grocery shopping before 6 PM.",
   "⏰ Alarm set for morning walk at 6:30 AM.",
@@ -121,6 +124,24 @@ Naa hone se sab choor-choor.`}
   }, [inputText]);
 
   const handleClear = () => setResponseText(null);
+const [hasNewNotifications, setHasNewNotifications] = useState(false);
+
+useEffect(() => {
+  const checkNotifications = async () => {
+    try {
+      const res = await api.get("/notifications");
+      const recent = res.data.filter((n) =>
+        moment(n.created_at).isAfter(moment().subtract(2, "days"))
+      );
+      const unread = recent.some((n) => !n.is_read);
+      setHasNewNotifications(unread);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
+  };
+
+  checkNotifications();
+}, []);
 
   return (
     <div className="flex flex-col h-full justify-between px-5 py-6 pt-12 bg-gradient-to-br from-[#0f0f0f] via-[#181818] to-[#111111] text-white relative overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent hover:scrollbar-thumb-gray-600">

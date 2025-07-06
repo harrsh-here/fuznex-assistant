@@ -1,5 +1,8 @@
 // controllers/notificationController.js
-const { Notification } = require("../models/Notifications");
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
+
 
 // GET /notifications - Fetch all notifications for current user
 exports.getNotifications = async (req, res) => {

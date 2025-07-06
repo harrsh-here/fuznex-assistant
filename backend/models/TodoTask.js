@@ -24,7 +24,7 @@ const TodoTask = sequelize.define('todo_tasks', {
     defaultValue: 'low',
   },
   due_date: {
-    type: DataTypes.DATE,
+    type: DataTypes.STRING,
     allowNull: true,
   },
   reminder: {

@@ -57,7 +57,7 @@ export default function DetailOverlay({ alarm, item, mode, onEdit, onDelete, onC
             <strong>Status:</strong>{" "}
             {isTask
               ? detail.is_completed
-                ? "Completed"
+                ? <>Completed </>
                 : "Pending"
               : detail.is_active
               ? "Active"

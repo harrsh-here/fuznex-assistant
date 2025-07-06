@@ -1,6 +1,8 @@
 const Subtask = require('../models/Subtask');
 const TodoTask = require('../models/TodoTask');
-const { Notification } = require("../models/Notifications");
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
 
 
 // Create subtask only if the task belongs to the user

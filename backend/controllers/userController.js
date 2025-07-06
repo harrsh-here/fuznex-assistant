@@ -27,14 +27,23 @@ exports.refreshToken = (req, res) => {
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token is required.' });
   }
-  
+
   jwt.verify(refreshToken, process.env.REFRESH_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid refresh token.' });
     }
-    
-    
-    
+
+    // Generate new access token using user data from decoded refresh token
+    const newAccessToken = jwt.sign(
+      {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
     res.json({ accessToken: newAccessToken });
   });
 };

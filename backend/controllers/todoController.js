@@ -1,7 +1,11 @@
 const TodoTask = require('../models/TodoTask');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-const { Notification } = require("../models/Notifications");
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
+
+
 
 
 
@@ -32,8 +36,8 @@ exports.createTodo = async (req, res) => {
       title,
       description,
       priority: priority || 'low',
-      due_date: due_date ? new Date(due_date) : null,
-      reminder: reminder ? new Date(reminder) : null,
+      due_date: due_date || null,
+      reminder: reminder || null,
       is_completed: false,
       tags,
       recurrence: recurrence || 'none',
