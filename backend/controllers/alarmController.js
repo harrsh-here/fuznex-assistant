@@ -50,6 +50,15 @@ exports.createAlarm = async (req, res) => {
       repeat_pattern: repeat_pattern || "once",
       is_active: typeof is_active === "boolean" ? is_active : true,
     });
+await Notification.create({
+      user_id,
+      alarm_id: newAlarm.alarm_id,
+      title: "Alarm Set",
+      message: `Alarm "${newAlarm.label}" scheduled for ${fullDatetime}`,
+      reminder_time: fullDatetime,
+      is_important: false,
+      status: "pending",
+    });
 
     res.status(201).json({ message: "Alarm created", alarm: newAlarm });
   } catch (err) {
