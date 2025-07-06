@@ -3,42 +3,53 @@ import { DotsThreeVertical, Alarm } from "phosphor-react";
 import moment from "moment";
 import api from "../../api/api";
 
-export default function AlarmCard({ alarm, onOptions, onEdit, onOpenDetail, reload }) {
+export default function AlarmCard({
+  alarm,
+  onOptions,
+  onEdit,
+  onOpenDetail,
+  reload,
+  selected,
+  selectionMode,
+  onSelect,
+}) {
   const [isActive, setIsActive] = useState(alarm.is_active);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Interpret backend string as local time (not UTC)
   const alarmTimeDisplay = moment(alarm.alarm_time, "YYYY-MM-DD HH:mm:ss").format("h:mm A");
 
   const handleToggle = async (e) => {
     e.stopPropagation();
     if (loading) return;
-
     const newState = !isActive;
-    setIsActive(newState); // Optimistic UI update
-
+    setIsActive(newState);
     setLoading(true);
     try {
       await api.put(`/alarms/${alarm.alarm_id}/toggle`);
       if (reload) reload();
     } catch (err) {
       console.error("Toggle failed:", err);
-      setIsActive(!newState); // Revert toggle if failed
+      setIsActive(!newState);
     }
     setLoading(false);
   };
 
+  const cardClasses = `relative bg-[#1e1e1e] px-4 py-3 rounded-2xl border shadow space-y-1 
+    ${selected ? "border-purple-500" : "border-[#2a2a2a]"} hover:border-purple-600 
+    ${!isActive ? "opacity-50" : ""}`;
+
+  const handleClick = () => {
+    if (selectionMode) {
+      onSelect();
+    } else {
+      onOpenDetail(alarm);
+    }
+  };
+
   return (
-    <div
-      className={`relative bg-[#1e1e1e] px-4 py-3 rounded-2xl border border-[#2a2a2a] shadow space-y-1 hover:border-purple-600 ${
-        !isActive ? "opacity-50" : ""
-      }`}
-    >
+    <div className={cardClasses} onClick={handleClick}>
       <div className="flex justify-between items-center">
-        <div
-          className="flex gap-3 items-start flex-1 cursor-pointer"
-          onClick={() => onOpenDetail(alarm)}
-        >
+        <div className="flex gap-3 items-start flex-1 cursor-pointer">
           <Alarm size={18} className="text-purple-400 mt-1" />
           <div className="min-w-0">
             <div className="text-sm font-medium text-white truncate" title={alarm.label}>
@@ -46,7 +57,6 @@ export default function AlarmCard({ alarm, onOptions, onEdit, onOpenDetail, relo
                 ? (alarm.label || "Unnamed Alarm").slice(0, 15) + "..."
                 : alarm.label || "Unnamed Alarm"}
             </div>
-
             <div className="text-xs text-gray-400">{alarmTimeDisplay}</div>
             {alarm.repeat_pattern && (
               <div className="text-xs text-gray-500 truncate">{alarm.repeat_pattern}</div>

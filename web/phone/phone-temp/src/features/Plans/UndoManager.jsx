@@ -16,36 +16,41 @@ export default function UndoManager({ toasts, onUndo, onCancel }) {
     });
   };
 
-  const handleUndo = async (toast) => {
+  const handleUndo = (toast) => {
     if (loadingMap[toast.id]) return;
     setLoading(toast.id, "undoing");
 
-    // Let UI update first
-    requestAnimationFrame(() => {
-      onUndo(toast).then(() => {
+    setTimeout(async () => {
+      try {
+        await onUndo(toast);
         setToastMessage(`Restored ${toast.type === "tasks" ? "task" : "alarm"}: "${toast.title}"`);
+      } finally {
         clearLoading(toast.id);
         setTimeout(() => setToastMessage(""), 2500);
-      });
-    });
+      }
+    }, 0);
   };
 
-  const handleCancel = async (toast) => {
+  const handleCancel = (toast) => {
     if (loadingMap[toast.id]) return;
     setLoading(toast.id, "deleting");
 
-    requestAnimationFrame(() => {
-      onCancel(toast.id).then(() => {
+    setTimeout(async () => {
+      try {
+        await onCancel(toast.id);
         setToastMessage(`Deleted ${toast.type === "tasks" ? "task" : "alarm"}: "${toast.title}"`);
+      } finally {
         clearLoading(toast.id);
         setTimeout(() => setToastMessage(""), 2500);
-      });
-    });
+      }
+    }, 0);
   };
 
   return (
     <div className="absolute bottom-4 left-0 right-0 flex justify-center z-50 px-4">
       <div className="space-y-2 max-w-xs w-full">
+
+        {/* Undo cards */}
         {toasts.map((toast) => {
           const loadingState = loadingMap[toast.id]; // "undoing" | "deleting" | undefined
 
@@ -63,7 +68,7 @@ export default function UndoManager({ toasts, onUndo, onCancel }) {
                 // ✅ Default state
                 <>
                   <div className="text-sm truncate mr-2">
-                    Deleted {toast.type === "tasks" ? "task" : "alarm"}:{" "}
+                    Deleting {toast.type === "tasks" ? "task" : "alarm"}:{" "}
                     <strong>{toast.title}</strong>
                   </div>
 
@@ -91,9 +96,9 @@ export default function UndoManager({ toasts, onUndo, onCancel }) {
           );
         })}
 
-        {/* Toast Snackbar */}
+        {/* In-screen toast message */}
         {toastMessage && (
-          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded shadow-lg animate-fadeInOut z-50">
+          <div className="fixed bottom-24 left-4 right-4 mx-auto bg-[#1e1e1e] border border-purple-700 text-white px-4 py-3 rounded-lg shadow z-40 text-center text-sm font-medium">
             {toastMessage}
           </div>
         )}

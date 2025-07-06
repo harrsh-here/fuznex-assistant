@@ -18,9 +18,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authTransition, setAuthTransition] = useState(false);
-  const [refreshIntervalId, setRefreshIntervalId] = useState(null);
 
-  // 🔁 Central login checker (called on load + network restore)
+  // ✅ Try to get profile or refresh token
   const checkLogin = async () => {
     const token = localStorage.getItem("token");
     const refreshToken = localStorage.getItem("refreshToken");
@@ -37,16 +36,16 @@ export default function App() {
       setUser(data);
       setIsAuthenticated(true);
     } catch (err) {
-      // Try to refresh if profile failed
+      // ⚠️ Try to refresh the token
       if (refreshToken) {
         try {
-          const { data } = await api.post("/users/refresh", { refreshToken });
+          const { data } = await api.post("/users/refresh-token", { refreshToken });
           localStorage.setItem("token", data.accessToken);
-          const { data: newProfile } = await api.get("/users/profile");
-          setUser(newProfile);
+          const { data: userProfile } = await api.get("/users/profile");
+          setUser(userProfile);
           setIsAuthenticated(true);
         } catch (refreshErr) {
-          console.error("🔁 Refresh failed:", refreshErr);
+          console.error("Token refresh failed", refreshErr);
           localStorage.removeItem("token");
           localStorage.removeItem("refreshToken");
           setIsAuthenticated(false);
@@ -61,7 +60,6 @@ export default function App() {
     }
   };
 
-  // 🔃 On mount: check tokens + login
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("accessToken");
@@ -76,31 +74,30 @@ export default function App() {
     checkLogin();
   }, []);
 
-  // 🌐 Handle user returning after internet loss
+  // 🌐 Retry login on reconnection
   useEffect(() => {
     const handleOnline = () => {
-      console.log("[Network] Online again. Retrying login...");
+      console.log("Online again, retrying login");
       checkLogin();
     };
-
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
   }, []);
 
-  // ⏳ Token auto-refresh every 55 minutes
+  // 🔁 Auto refresh every 55 mins
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const interval = setInterval(async () => {
       try {
         const refreshToken = localStorage.getItem("refreshToken");
-        if (!refreshToken) throw new Error("Missing refresh token");
+        if (!refreshToken) throw new Error("No refresh token");
 
-        const { data } = await api.post("/users/refresh", { refreshToken });
+        const { data } = await api.post("/users/refresh-token", { refreshToken });
         localStorage.setItem("token", data.accessToken);
-        console.log("[Auto Refresh] Token updated");
+        console.log("🔁 Token refreshed");
       } catch (err) {
-        console.error("[Auto Refresh Failed]", err);
+        console.error("Auto token refresh failed", err);
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         setIsAuthenticated(false);
@@ -108,11 +105,9 @@ export default function App() {
       }
     }, 55 * 60 * 1000);
 
-    setRefreshIntervalId(interval);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  // 🔀 OAuth cleanup
   useEffect(() => {
     if (isAuthenticated && window.location.pathname === "/auth/success") {
       window.history.replaceState({}, document.title, "/");
@@ -138,7 +133,6 @@ export default function App() {
     setTimeout(() => {
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
-      clearInterval(refreshIntervalId);
       setIsAuthenticated(false);
       setUser(null);
       setActivePath("home");
