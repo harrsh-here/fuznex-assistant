@@ -32,6 +32,7 @@ export default function PlansScreen() {
   const [selectedItems, setSelectedItems] = useState([]);
   const toastTimeouts = useRef({});
   const pendingDeletions = useRef({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 
   const refreshInterval = useRef(null);
@@ -92,9 +93,15 @@ export default function PlansScreen() {
     setSelectionMode(false);
   };
 
-  const deleteSelected = async () => {
-  const confirm = window.confirm("Are you sure you want to delete the selected items?");
-  if (!confirm) return;
+  const confirmDeleteSelected = () => {
+  if (selectedItems.length > 0) {
+    setShowDeleteConfirm(true); // Show modal
+  }
+};
+   
+ const handleConfirmedBatchDelete = async () => {
+  setShowDeleteConfirm(false); // Close modal
+  
 
   const isTask = activeTab === "tasks";
   const route = isTask ? "todos" : "alarms";
@@ -146,36 +153,44 @@ export default function PlansScreen() {
     showToast("Saved successfully");
   };
 
-  const onDelete = async () => {
-    if (!optionsItem) return;
-    const { type, task_id, alarm_id, title, label } = optionsItem;
-    const id = type === "tasks" ? task_id : alarm_id;
-    const route = type === "tasks" ? "todos" : "alarms";
-    const toastId = Date.now();
+ const onDelete = async () => {
+  if (!optionsItem) return;
+  const { type, task_id, alarm_id, title, label } = optionsItem;
+  const id = type === "tasks" ? task_id : alarm_id;
+  const route = type === "tasks" ? "todos" : "alarms";
+  const toastId = Date.now();
 
-    setOptionsItem(null);
-    setUndoToasts((prev) => [
-      { id: toastId, type, itemId: id, title: title || label },
-      ...prev.slice(0, 2),
-    ]);
+  setOptionsItem(null);
 
-    toastTimeouts.current[toastId] = setTimeout(async () => {
-      try {
-        await api.delete(`/${route}/${id}`);
-        showToast("Deleted");
-      } catch (err) {
-        alert("Error deleting item");
-      } finally {
-        delete toastTimeouts.current[toastId];
-        setUndoToasts((prev) => prev.filter((t) => t.id !== toastId));
-        loadAll();
-      }
-    }, 3000);
+  setUndoToasts((prev) => [
+    { id: toastId, type, itemId: id, title: title || label },
+    ...prev.slice(0, 2),
+  ]);
+
+  pendingDeletions.current[toastId] = {
+    route,
+    ids: id,
   };
+
+  toastTimeouts.current[toastId] = setTimeout(async () => {
+    try {
+      await api.delete(`/${route}/${id}`);
+      showToast("Deleted");
+    } catch (err) {
+      alert("Error deleting item");
+    } finally {
+      delete toastTimeouts.current[toastId];
+      setUndoToasts((prev) => prev.filter((t) => t.id !== toastId));
+      loadAll();
+    }
+  }, 3000);
+};
+
 
 const applyUndo = (toast) => {
   clearTimeout(toastTimeouts.current[toast.id]);
   delete toastTimeouts.current[toast.id];
+   delete pendingDeletions.current[toast.id]; // ← ADD this
   setUndoToasts((prev) => prev.filter((t) => t.id !== toast.id));
   cancelSelection();
   loadAll();
@@ -186,17 +201,21 @@ const applyUndo = (toast) => {
   const pending = pendingDeletions.current[id];
   if (!pending) return;
 
+  // Cancel the delayed deletion timeout
   if (toastTimeouts.current[id]) {
     clearTimeout(toastTimeouts.current[id]);
     delete toastTimeouts.current[id];
   }
 
   try {
+    // Now perform the actual deletion immediately
     if (Array.isArray(pending.ids)) {
       await Promise.all(pending.ids.map((i) => api.delete(`/${pending.route}/${i}`)));
     } else {
-      await api.delete(`/${pending.route}/${pending.id}`);
+      await api.delete(`/${pending.route}/${pending.ids}`);
     }
+
+    showToast("Deleted");
   } catch {
     alert("Force delete failed.");
   }
@@ -205,6 +224,7 @@ const applyUndo = (toast) => {
   setUndoToasts((prev) => prev.filter((t) => t.id !== id));
   loadAll();
 };
+
 
   const onToggleComplete = async (task) => {
     try {
@@ -247,7 +267,7 @@ const applyUndo = (toast) => {
     const inactive = items.filter((a) => !a.is_active).sort((a, b) => new Date(b.alarm_time) - new Date(a.alarm_time));
     return [...active, ...inactive];
   };
-
+  
   const priorityOptions = [
     { label: "All", value: "all" },
     { label: "High", value: "high" },
@@ -386,7 +406,7 @@ const applyUndo = (toast) => {
           </button>
         {selectionMode ? (
   <button
-    onClick={deleteSelected}
+    onClick={confirmDeleteSelected}
     className="p-2 bg-red-600 rounded-full hover:bg-red-700"
     title="Delete Selected"
   >
@@ -405,12 +425,19 @@ const applyUndo = (toast) => {
       </div>
 
       {/* Toast */}
-      {showToastMsg && (
-        <div className="fixed bottom-24 left-4 right-4 mx-auto bg-[#1e1e1e] border border-purple-700 text-white px-4 py-3 rounded-lg shadow z-40 text-center text-sm font-medium">
-    {toastMessage}
-          <CheckCircle size={18} className="inline mr-2" /> {showToastMsg}
-        </div>
-      )}
+   {showToastMsg && (
+  <div
+    className="fixed left-1/2 transform -translate-x-1/2 bg-[#1e1e1e] border border-purple-700 text-white px-4 py-2 rounded-lg shadow z-50 flex items-center gap-2 text-sm font-medium max-w-[90%] sm:max-w-[300px]"
+    style={{ bottom: "9.5rem" }} // ⬅️ Fine-tuned spacing
+  >
+    <CheckCircle size={16} className="text-green-500" />
+    <span>{showToastMsg}</span>
+  </div>
+)}
+
+
+
+
 
       {/* Cards List */}
       <div className="flex-1 overflow-y-auto space-y-3 pb-20">{renderCards()}</div>
@@ -444,6 +471,30 @@ const applyUndo = (toast) => {
           onClose={() => setDetailItem(null)}
         />
       )}
+          {showDeleteConfirm && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+   <div className="bg-[#1e1e1e] border border-gray-700 rounded-lg p-5 w-[85%] max-w-[320px] text-center shadow-lg">
+
+      <p className="text-white mb-4">
+        Are you sure you want to delete {selectedItems.length} selected {activeTab}?
+      </p>
+      <div className="flex justify-center gap-4">
+        <button
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+          onClick={handleConfirmedBatchDelete}
+        >
+          Yes, Delete
+        </button>
+        <button
+          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       <UndoManager toasts={undoToasts} onUndo={applyUndo} onCancel={onCancelUndo} />
        {loading && <LoadingSpinner />}

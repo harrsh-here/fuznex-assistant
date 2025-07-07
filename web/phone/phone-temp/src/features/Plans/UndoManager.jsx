@@ -98,9 +98,13 @@ export default function UndoManager({ toasts, onUndo, onCancel }) {
 
         {/* In-screen toast message */}
         {toastMessage && (
-          <div className="fixed bottom-24 left-4 right-4 mx-auto bg-[#1e1e1e] border border-purple-700 text-white px-4 py-3 rounded-lg shadow z-40 text-center text-sm font-medium">
-            {toastMessage}
-          </div>
+         <div
+  className="fixed left-1/2 transform -translate-x-1/2 bg-[#1e1e1e] border border-purple-700 text-white px-4 py-2 rounded-lg shadow z-50 text-sm font-medium max-w-[90%] sm:max-w-[300px]"
+  style={{ bottom: "9.5rem" }}
+>
+  {toastMessage}
+</div>
+
         )}
       </div>
     </div>

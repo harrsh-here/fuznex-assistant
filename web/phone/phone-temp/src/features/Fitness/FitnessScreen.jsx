@@ -61,7 +61,9 @@ export default function FitnessScreen() {
     });
   }, []);
 
-  const shimmer = <div className="w-16 h-4 bg-gray-700 rounded animate-pulse mt-1"></div>;
+  const shimmer = (
+    <span className="inline-block w-16 h-4 bg-gray-700 rounded animate-pulse mt-1"></span>
+  );
 
   return (
     <div className="flex flex-col h-full px-5 py-6 pt-12 text-white overflow-hidden">

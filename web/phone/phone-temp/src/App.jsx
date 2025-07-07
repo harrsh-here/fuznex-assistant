@@ -11,165 +11,135 @@ import ProfileScreen from "./features/Profile/ProfileScreen";
 import EditProfileScreen from "./features/Profile/EditProfileScreen";
 import LoginSignupScreen from "./features/Auth/LoginSignupScreen";
 import AuthSuccess from "./features/Auth/AuthSuccess";
+import ErrorBoundary from "./features/Fitness/ErrorBoundary";
+
 
 export default function App() {
   const [activePath, setActivePath] = useState("home");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [authTransition, setAuthTransition] = useState(false);
 
-  // ✅ Try to get profile or refresh token
+  const isAuthenticated = !!user;
+
+  const applyAccessToken = (token) => {
+    if (token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      localStorage.setItem("token", token);
+    }
+  };
+
   const checkLogin = async () => {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("token");
     const refreshToken = localStorage.getItem("refreshToken");
 
-    if (!token && !refreshToken) {
-      setIsAuthenticated(false);
-      setUser(null);
-      setCheckingAuth(false);
-      return;
-    }
+    if (!accessToken && !refreshToken) return logoutImmediately();
 
     try {
+      applyAccessToken(accessToken);
       const { data } = await api.get("/users/profile");
       setUser(data);
-      setIsAuthenticated(true);
-    } catch (err) {
-      // ⚠️ Try to refresh the token
-      if (refreshToken) {
-        try {
-          const { data } = await api.post("/users/refresh-token", { refreshToken });
-          localStorage.setItem("token", data.accessToken);
-          const { data: userProfile } = await api.get("/users/profile");
-          setUser(userProfile);
-          setIsAuthenticated(true);
-        } catch (refreshErr) {
-          console.error("Token refresh failed", refreshErr);
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshToken");
-          setIsAuthenticated(false);
-          setUser(null);
-        }
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
+    } catch {
+      if (!refreshToken) return logoutImmediately();
+
+      try {
+        const { data } = await api.post("/users/refresh", { refreshToken });
+        applyAccessToken(data.accessToken);
+        const { data: userData } = await api.get("/users/profile");
+        setUser(userData);
+      } catch (err) {
+        console.error("[Refresh Error]", err);
+        logoutImmediately();
       }
     } finally {
       setCheckingAuth(false);
     }
   };
 
+  const logoutImmediately = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    delete api.defaults.headers.common["Authorization"];
+    setUser(null);
+    setCheckingAuth(false);
+  };
+
+  // 📌 First-load + URL token extractor
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("accessToken");
     const refreshToken = params.get("refreshToken");
 
     if (accessToken && refreshToken) {
-      localStorage.setItem("token", accessToken);
+      applyAccessToken(accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.history.replaceState({}, document.title, "/");
     }
 
     checkLogin();
   }, []);
 
-  // 🌐 Retry login on reconnection
-  useEffect(() => {
-    const handleOnline = () => {
-      console.log("Online again, retrying login");
-      checkLogin();
-    };
-    window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
-  }, []);
-
-  // 🔁 Auto refresh every 55 mins
+  // 🔁 Refresh token every 45 minutes
   useEffect(() => {
     if (!isAuthenticated) return;
-
     const interval = setInterval(async () => {
       try {
         const refreshToken = localStorage.getItem("refreshToken");
-        if (!refreshToken) throw new Error("No refresh token");
+        if (!refreshToken) throw new Error("Missing refresh token");
 
-        const { data } = await api.post("/users/refresh-token", { refreshToken });
-        localStorage.setItem("token", data.accessToken);
-        console.log("🔁 Token refreshed");
+        const { data } = await api.post("/users/refresh", { refreshToken });
+        applyAccessToken(data.accessToken);
+        console.log("[Token Auto-Refreshed]");
       } catch (err) {
-        console.error("Auto token refresh failed", err);
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        setIsAuthenticated(false);
-        setUser(null);
+        console.error("[Auto Refresh Error]:", err);
+        logoutImmediately();
       }
-    }, 55 * 60 * 1000);
+    }, 45 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
+  // 🌐 Retry login on internet reconnect
   useEffect(() => {
-    if (isAuthenticated && window.location.pathname === "/auth/success") {
-      window.history.replaceState({}, document.title, "/");
-      setActivePath("home");
-    }
+    const retry = () => {
+      if (!isAuthenticated) {
+        console.log("[Reconnect] Retrying auth...");
+        checkLogin();
+      }
+    };
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
   }, [isAuthenticated]);
+
+  const handleLogin = (userData, tokens) => {
+    if (tokens?.token) applyAccessToken(tokens.token);
+    if (tokens?.refreshToken) localStorage.setItem("refreshToken", tokens.refreshToken);
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    logoutImmediately();
+    setActivePath("home");
+  };
 
   const navigateTo = (path) => setActivePath(path);
 
-  const handleLogin = (userData) => {
-    setAuthTransition(true);
-    setTimeout(() => {
-      setUser(userData);
-      setIsAuthenticated(true);
-      setAuthTransition(false);
-    }, 600);
-  };
-
-  const handleRegister = handleLogin;
-
-  const handleLogout = () => {
-    setAuthTransition(true);
-    setTimeout(() => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      setIsAuthenticated(false);
-      setUser(null);
-      setActivePath("home");
-      setAuthTransition(false);
-    }, 600);
-  };
-
   const renderScreen = () => {
     switch (activePath) {
-      case "plans":
-        return <PlansScreen />;
-      case "chat":
-        return <ChatScreen />;
-      case "home":
-        return <HomeScreen onNavigate={navigateTo} user={user} />;
-      case "fitness":
-        return <FitnessScreen />;
-      case "history":
-        return <HistoryScreen />;
-      case "profile":
-        return (
-          <ProfileScreen
-            user={user}
-            onLogout={handleLogout}
-            onEditProfile={() => navigateTo("edit-profile")}
-          />
-        );
-      case "edit-profile":
-        return <EditProfileScreen user={user} onBack={() => navigateTo("profile")} />;
-      case "notifications":
-        return <NotificationsScreen onNavigate={navigateTo} />;
-      default:
-        return <HomeScreen onNavigate={navigateTo} />;
+      case "plans": return <ErrorBoundary><PlansScreen /></ErrorBoundary>;
+      case "chat": return <ErrorBoundary><ChatScreen /></ErrorBoundary>;
+      case "home": return<ErrorBoundary><HomeScreen onNavigate={navigateTo} user={user} /></ErrorBoundary>;
+      case "fitness": return<ErrorBoundary>
+  <FitnessScreen />
+</ErrorBoundary>;
+      case "history": return <ErrorBoundary><HistoryScreen /></ErrorBoundary>;
+      case "profile": return <ErrorBoundary><ProfileScreen user={user} onLogout={handleLogout} onEditProfile={() => navigateTo("edit-profile")} /></ErrorBoundary>;
+      case "edit-profile": return <ErrorBoundary><EditProfileScreen user={user} onBack={() => navigateTo("profile")} /></ErrorBoundary>;
+      case "notifications": return<ErrorBoundary> <NotificationsScreen onNavigate={navigateTo} /></ErrorBoundary>;
+      default: return <ErrorBoundary><HomeScreen onNavigate={navigateTo} /></ErrorBoundary>;
     }
   };
 
-  if (checkingAuth || authTransition) {
+  if (checkingAuth) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
         <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -184,7 +154,7 @@ export default function App() {
         {window.location.pathname === "/auth/success" && !isAuthenticated ? (
           <AuthSuccess onAuth={handleLogin} />
         ) : !isAuthenticated ? (
-          <LoginSignupScreen onLogin={handleLogin} onRegister={handleRegister} />
+          <LoginSignupScreen onLogin={handleLogin} onRegister={handleLogin} />
         ) : (
           <AppShell activePath={activePath} onNavigate={navigateTo} onLogout={handleLogout}>
             {renderScreen()}

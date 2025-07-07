@@ -25,10 +25,15 @@ export default function AuthSuccess({ onAuth }) {
     api.get("/users/profile", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
+        
       },
+      
     })
       .then(({ data }) => {
-        onAuth(data);
+        onAuth(data, { token: accessToken, refreshToken });
+        console.log("[Tokens from URL]", accessToken, refreshToken);
+
+
       })
       .catch((err) => {
         console.error("[AuthSuccess] Profile fetch failed:", err);
