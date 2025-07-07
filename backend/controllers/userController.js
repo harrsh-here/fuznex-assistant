@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const UserHistory = require('../models/UserHistory'); // if not already imported
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -129,33 +130,55 @@ exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate input
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
+    // Find user by email
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check password
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Incorrect password' });
     }
 
-    // Remove password from response
+    // Prepare user data for response
     const userData = user.toJSON();
     delete userData.password;
 
-    // Generate JWT token and Refresh Token
+    // Generate tokens
     const token = generateToken(user);
     const refreshToken = generateRefreshToken(user);
-    
-    res.json({ message: 'Login successful', user: userData, token, refreshToken });
+
+    // Log login event in UserHistory (non-blocking)
+    try {
+      await UserHistory.create({
+        user_id: user.user_id, // ✅ Correct field
+        assistant_name: "N/A",
+        interaction: "User logged in",
+        type: "system",
+      });
+    } catch (historyError) {
+      console.error("Failed to log UserHistory:", historyError);
+      // Don't block login if history logging fails
+    }
+
+    // Send response
+    return res.json({
+      message: 'Login successful',
+      user: userData,
+      token,
+      refreshToken,
+    });
+
   } catch (error) {
     console.error('Error logging in:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 

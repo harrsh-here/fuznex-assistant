@@ -129,8 +129,18 @@ export default function AddEditOverlay({ mode, item = null, onSave, onCancel }) 
         const data = { title, description, priority, due_date: dueDatetime };
         if (isEditing) {
           await api.put(`/todos/${item.task_id}`, data);
+           await api.post("/history", {
+            assistant_name: "N/A",
+            interaction: `Task Modified: ${title}`,
+            type: "todo"
+          });
         } else {
           await api.post("/todos", data);
+           await api.post("/history", {
+            assistant_name: "N/A",
+            interaction: `Task created: ${title}`,
+            type: "todo"
+          });
         }
       } else if (isAlarm) {
         let h = Number(alarmHour);
@@ -149,8 +159,19 @@ export default function AddEditOverlay({ mode, item = null, onSave, onCancel }) 
         };
         if (isEditing) {
           await api.put(`/alarms/${item.alarm_id}`, payload);
+           await api.post("/history", {
+            assistant_name: "N/A",
+            interaction: `Alarm modified: ${title}`,
+            type: "todo"
+          });
         } else {
           await api.post("/alarms", payload);
+     
+           await api.post("/history", {
+            assistant_name: "N/A",
+            interaction: `Alarm created: ${title}`,
+            type: "todo"
+          });
         }
       }
 

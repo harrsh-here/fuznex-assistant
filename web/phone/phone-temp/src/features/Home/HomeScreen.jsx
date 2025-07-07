@@ -27,6 +27,8 @@ const suggestions = [
 ];
 
 export default function HomeScreen({ onNavigate, user }) {
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [expandedText, setExpandedText] = useState(null);
   const [inputText, setInputText] = useState("");
   const [responseText, setResponseText] = useState(null);
@@ -37,7 +39,21 @@ export default function HomeScreen({ onNavigate, user }) {
    const { name, email, avatar_url } = user || {};
   const handleBoxClick = (text) => setExpandedText(text);
   const handleClose = () => setExpandedText(null);
-
+  
+  // 2a. Fetch notifications once on mount
+  useEffect(() => {
+    let isMounted = true;
+    api.getNotifications()
+      .then(res => {
+        if (!isMounted) return;
+        setNotifications(res.data);
+        setUnreadCount(res.data.filter(n => !n.read).length);
+      })
+      .catch(console.error);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const handleSend = () => {
     
     if (!inputText.trim()) return;
@@ -155,7 +171,11 @@ useEffect(() => {
           onClick={() => onNavigate("notifications")}
         >
           <Bell className="w-6 h-6 text-purple-400" />
-          <span className="absolute top-0 right-0 w-2 h-2 bg-purple-500 rounded-full" />
+
+          {unreadCount > 0 && (
+  <span className="absolute top-0 right-0 w-2 h-2 bg-purple-500 rounded-full" />
+)}
+
         </button>
       </div>
 

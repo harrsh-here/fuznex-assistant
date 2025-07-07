@@ -11,6 +11,9 @@ import AddEditOverlay from "./AddEditOverlay";
 import DetailOverlay from "./DetailOverlay";
 import UndoManager from "./UndoManager";
 import LoadingSpinner from "./LoadingSpinner";
+import { logHistory } from "../../utils/logHistory";
+
+
 
 export default function PlansScreen() {
   const [activeTab, setActiveTab] = useState("tasks");
@@ -232,6 +235,8 @@ const applyUndo = (toast) => {
         is_completed: !task.is_completed,
         completed_at: !task.is_completed ? new Date() : null,
       });
+   
+
       loadAll();
     } catch {
       alert("Failed to toggle completion");
