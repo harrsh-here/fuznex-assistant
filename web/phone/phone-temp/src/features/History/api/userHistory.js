@@ -1,4 +1,3 @@
-// src/features/History/api/userHistory.js
 import api from "../../../api/api";
 
 /**
@@ -13,4 +12,11 @@ export function fetchUserHistory({ page = 1, pageSize = 20, type = null, assista
       ...(assistant_name ? { assistant_name } : {}),
     },
   });
+}
+
+/**
+ * ✅ Delete a single history entry by ID
+ */
+export function deleteUserHistory(id) {
+  return api.delete(`/history/${id}`);
 }

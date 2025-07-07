@@ -2,6 +2,9 @@ const User = require('../models/User');
 const UserHistory = require('../models/UserHistory'); // if not already imported
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
 require('dotenv').config();
 
 // Generate JWT Token using id and role
@@ -167,7 +170,18 @@ exports.loginUser = async (req, res) => {
       console.error("Failed to log UserHistory:", historyError);
       // Don't block login if history logging fails
     }
-
+    // After task is successfully created
+    try {
+await Notification.create({
+  user_id: user.user_id,
+  
+  title: "User logged in",
+  message: "This id is logged in on a device"
+});
+}catch (notifi_error) {
+      console.error("Failed to log Notification:", notifi_error);
+     
+    }
     // Send response
     return res.json({
       message: 'Login successful',

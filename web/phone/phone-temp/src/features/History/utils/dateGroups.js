@@ -1,45 +1,45 @@
-// 6. utils/dateGroups.js
-// Group history entries into Today, Yesterday, This Month, Earlier
+// src/features/History/utils/dateGroups.js
+import moment from "moment";
 
+/**
+ * Group entries into Today, Yesterday, Last 7 Days, Earlier
+ */
 export function groupByDate(entries) {
-  if (!entries || entries.length === 0) return [];
-
-  const groups = {
-    Today: [],
-    Yesterday: [],
-    "This Month": [],
-    Earlier: [],
-  };
-
-  const now = new Date();
-  const todayStr = now.toDateString();
-
-  const yesterday = new Date();
-  yesterday.setDate(now.getDate() - 1);
-  const yesterdayStr = yesterday.toDateString();
-
-  for (const entry of entries) {
-    const date = new Date(entry.timestamp);
-    const dateStr = date.toDateString();
-
-    if (dateStr === todayStr) {
-      groups["Today"].push(entry);
-    } else if (dateStr === yesterdayStr) {
-      groups["Yesterday"].push(entry);
-    } else if (
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear()
-    ) {
-      groups["This Month"].push(entry);
-    } else {
-      groups["Earlier"].push(entry);
-    }
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return [];
   }
 
-  return Object.entries(groups)
+  const now = moment();
+  const today = now.clone().startOf("day");
+  const yesterday = now.clone().subtract(1, "day").startOf("day");
+  const last7 = now.clone().subtract(7, "days").startOf("day");
+
+  const buckets = {
+    "Today": [],
+    "Yesterday": [],
+    "Last 7 Days": [],
+    "Earlier": [],
+  };
+
+  entries.forEach((entry) => {
+    const ts = entry.timestamp ? moment(entry.timestamp) : null;
+    if (!ts || !ts.isValid()) {
+      buckets["Earlier"].push(entry);
+    } else if (ts.isSame(today, "day")) {
+      buckets["Today"].push(entry);
+    } else if (ts.isSame(yesterday, "day")) {
+      buckets["Yesterday"].push(entry);
+    } else if (ts.isAfter(last7)) {
+      buckets["Last 7 Days"].push(entry);
+    } else {
+      buckets["Earlier"].push(entry);
+    }
+  });
+
+  return Object.entries(buckets)
     .filter(([, items]) => items.length > 0)
     .map(([title, items]) => ({
-      label: title,
+      title,
       items: items.sort(
         (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
       ),

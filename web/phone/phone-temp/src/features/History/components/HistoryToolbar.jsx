@@ -1,3 +1,4 @@
+// src/features/History/components/HistoryToolbar.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { CaretDown } from "phosphor-react";
 import { filterTypes, assistantOptions } from "../utils/filterOptions";
@@ -25,15 +26,22 @@ export default function HistoryToolbar({ filters, setFilters }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleTypeChange = (type) => {
-    setFilters((prev) => ({ ...prev, type }));
+  const handleTypeChange = (value) => {
+    setFilters((prev) => ({ ...prev, type: value }));
     setShowTypeMenu(false);
   };
 
-  const handleAssistantChange = (assistant) => {
-    setFilters((prev) => ({ ...prev, assistant }));
+  const handleAssistantChange = (value) => {
+    setFilters((prev) => ({ ...prev, assistant: value }));
     setShowAssistantMenu(false);
   };
+
+  const currentTypeLabel =
+    filterTypes.find((t) => t.value === filters.type)?.label || "Type";
+
+  const currentAssistantLabel =
+    assistantOptions.find((a) => a.value === filters.assistant)?.label ||
+    "Assistant";
 
   return (
     <div className="flex justify-start items-center mb-4 gap-4 relative flex-wrap">
@@ -46,7 +54,7 @@ export default function HistoryToolbar({ filters, setFilters }) {
           }}
           className="bg-[#1e1e1e] border border-gray-700 text-sm px-3 py-2 rounded-lg text-gray-300 flex items-center gap-1"
         >
-          Type: {filters.type}
+          Type: {currentTypeLabel}
           <CaretDown size={14} />
         </button>
 
@@ -54,11 +62,11 @@ export default function HistoryToolbar({ filters, setFilters }) {
           <div className="absolute z-10 mt-2 w-32 bg-[#1e1e1e] border border-gray-700 rounded-xl shadow">
             {filterTypes.map((t) => (
               <button
-                key={t}
-                onClick={() => handleTypeChange(t)}
+                key={t.value}
+                onClick={() => handleTypeChange(t.value)}
                 className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-purple-700"
               >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {t.label}
               </button>
             ))}
           </div>
@@ -74,7 +82,7 @@ export default function HistoryToolbar({ filters, setFilters }) {
           }}
           className="bg-[#1e1e1e] border border-gray-700 text-sm px-3 py-2 rounded-lg text-gray-300 flex items-center gap-1"
         >
-          Assistant: {filters.assistant}
+          Assistant: {currentAssistantLabel}
           <CaretDown size={14} />
         </button>
 
@@ -82,11 +90,11 @@ export default function HistoryToolbar({ filters, setFilters }) {
           <div className="absolute z-10 mt-2 w-36 bg-[#1e1e1e] border border-gray-700 rounded-xl shadow">
             {assistantOptions.map((a) => (
               <button
-                key={a}
-                onClick={() => handleAssistantChange(a)}
+                key={a.value}
+                onClick={() => handleAssistantChange(a.value)}
                 className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-yellow-700"
               >
-                {a}
+                {a.label}
               </button>
             ))}
           </div>

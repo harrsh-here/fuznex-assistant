@@ -1,6 +1,7 @@
+// src/features/History/components/HistoryItem.jsx
 import React from "react";
 import { Trash } from "phosphor-react";
-import { iconFor, summarize, formatTimestamp } from "../utils/formatters";
+import { summarize, formatTimestamp } from "../utils/formatters";
 
 export default function HistoryItem({
   item,
@@ -9,48 +10,63 @@ export default function HistoryItem({
   onSelect,
   onDelete,
 }) {
-  const Icon = iconFor(item.type);
+  // Emoji map for different types
+  const emojiMap = {
+    alarm: "⏰",
+    todo: "📝",
+    chat: "💬",
+    system: "⚙️",
+  };
+  const emoji = emojiMap[item.type] || "📄";
+
+  const cardClasses = `
+    flex items-center justify-between px-4 py-3 rounded-xl border
+    ${selected ? "border-purple-500 bg-[#2a2a2a]" : "border-[#2a2a2a] bg-[#1e1e1e]"}
+    hover:border-purple-600 transition-all duration-200
+    ${item.fadeIn ? "animate-fadeIn" : ""}
+  `;
 
   return (
     <div
-      className={`bg-[#1e1e1e] border border-[#2a2a2a] text-sm rounded-xl px-4 py-3 transition-shadow ${
-        item.fadeIn ? "animate-fadeIn" : ""
-      }`}
+      className={cardClasses}
+      onClick={selectionMode ? onSelect : undefined}
+      role="button"
     >
-      <div className="flex justify-between items-center">
-        {/* Left: Icon + Info */}
-        <div className="flex items-center gap-3">
-          <div className="bg-gray-700 p-1.5 rounded-lg text-white">
-            <Icon />
-          </div>
-          <div>
-            <div className="text-gray-200">{summarize(item)}</div>
-            <div className="text-xs text-gray-500">
-              {formatTimestamp(item.timestamp)}
-            </div>
-          </div>
-        </div>
+      {/* Left side: emoji + info */}
+      <div className="flex items-center gap-3">
+        <span className="text-lg">{emoji}</span>
 
-        {/* Right: Delete or Checkbox */}
-        <div className="flex items-center gap-2">
-          {selectionMode ? (
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={onSelect}
-              className="w-4 h-4 accent-purple-600"
-            />
-          ) : (
-            <button
-              onClick={onDelete}
-              className="text-red-500 hover:text-red-600 transition"
-              title="Delete"
-            >
-              <Trash size={18} />
-            </button>
-          )}
+        <div className="flex flex-col">
+          <div className="text-sm font-medium text-white leading-tight">
+            {summarize(item)}
+          </div>
+          <div className="text-xs text-gray-400 mt-0.5">
+            {formatTimestamp(item.timestamp)}
+          </div>
         </div>
       </div>
+
+      {/* Right: delete or checkbox */}
+      {!selectionMode ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(item.id);
+          
+          }}
+          className="text-red-500 hover:text-red-600"
+          title="Delete entry"
+        >
+          <Trash size={18} />
+        </button>
+      ) : (
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onSelect}
+          className="w-4 h-4 accent-purple-600"
+        />
+      )}
     </div>
   );
 }

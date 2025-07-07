@@ -1,68 +1,57 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { fetchUserHistory } from "../api/userHistory";
+import { useEffect, useState } from "react";
+import { fetchUserHistory, deleteUserHistory } from "../api/userHistory";
 import { groupByDate } from "../utils/dateGroups";
 
-
-export default function useHistory({ search = "", filters = [] }) {
+export default function useHistory({ type, assistant }) {
   const [groups, setGroups] = useState([]);
-  const [expandedId, setExpandedId] = useState(null);
-  const lastEventIds = useRef(new Set());
+  const [loading, setLoading] = useState(true);
 
-  const refreshTimer = useRef(null);
-
-  const load = useCallback(async (silent = false) => {
+  const reload = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      console.log("🔁 [useHistory] Loading history...");
-      console.log("📥 Filters in effect:", filters);
+      // Only send the param if it's not "all"
+      const response = await fetchUserHistory({
+        type: type !== "all" ? type : null,
+        assistant_name: assistant !== "all" ? assistant : null,
+      });
 
-      const typesToFetch =
-        filters.length === 0 ? ["chat", "todo", "alarm", "system"] : filters;
+      
 
-      console.log("🎯 Actual types fetching:", typesToFetch);
+      // response.data is the array of history entries
+      const entries = Array.isArray(response.data)
+        ? response.data
+        : [];
 
-      const allResults = await Promise.all(
-        typesToFetch.map((type) =>
-          fetchUserHistory({ page: 1, pageSize: 50, type })
-        )
-      );
-
-      const merged = allResults.flat();
-
-      console.log("📦 Merged API entries:", merged);
-
-      const newIds = merged
-        .filter((e) => !lastEventIds.current.has(e.id))
-        .map((e) => e.id);
-
-      console.log("🆕 New history IDs:", newIds);
-
-      lastEventIds.current = new Set(merged.map((e) => e.id));
-
-      const finalList = merged.map((e) =>
-        newIds.includes(e.id) ? { ...e, fadeIn: true } : e
-      );
-
-      const grouped = groupByDate(finalList);
-
-      console.log("📊 Grouped entries:", grouped);
+      const grouped = groupByDate(entries);
+      
 
       setGroups(grouped);
     } catch (err) {
-      console.error("❌ Failed to load history:", err);
+      console.error("❌ Failed to fetch history:", err);
+    } finally {
+      setLoading(false);
     }
-  }, [filters, search]);
+  };
 
   useEffect(() => {
-    load();
-    refreshTimer.current = setInterval(() => load(true), 5000);
-    return () => clearInterval(refreshTimer.current);
-  }, [load]);
+    reload();
+  }, [type, assistant]);
 
   return {
     groups,
-    expandedId,
-    setExpandedId,
-    loadMore: () => load(true),
-    loadingMore: groups.length === 0,
+    loading,
+    reload,
+
+    /**
+     * ✅ Real delete method using DELETE request
+     */
+    deleteHistory: async (id) => {
+      try {
+        await deleteUserHistory(id);
+      } catch (err) {
+        console.error("❌ Failed to delete history item:", err);
+        throw err;
+      }
+    },
   };
 }
