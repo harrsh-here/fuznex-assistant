@@ -3,8 +3,11 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Issuer } = require('openid-client');
 const User = require('../models/User');
-
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
 let googleClient = null;
+const UserHistory = require('../models/UserHistory');
 
 async function getGoogleClient() {
   if (googleClient) return googleClient;
@@ -38,9 +41,29 @@ exports.googleLogin = async (req, res) => {
       state,
       nonce,
     });
-
+ try {
+      await UserHistory.create({
+        user_id: user.user_id, // ✅ Correct field
+        assistant_name: "N/A",
+        interaction: "User logged in",
+        type: "system",
+      });
+    } catch (historyError) {
+      console.error("Failed to log UserHistory:", historyError);
+      // Don't block login if history logging fails
+    }
+    // After task is successfully created
+    try {
+await Notification.create({
+  user_id: user.user_id,
+  
+  title: "User logged in",
+  message: "This id is logged in on a device"
+});
+}catch (notifi_error) {
+      console.error("Failed to log Notification:", notifi_error);
     console.log('[OAuth] Redirecting to:', authUrl);
-    res.redirect(authUrl);
+    res.redirect(authUrl);}
   } catch (err) {
     console.error('[OAuth] Error initiating Google login:', err);
     res.status(500).send('Error initiating Google login');
