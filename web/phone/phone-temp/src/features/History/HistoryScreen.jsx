@@ -81,11 +81,24 @@ export default function HistoryScreen({ navigate }) {
       </div>
 
       {/* Filter Toolbar (Planner style) */}
-      {!selectionMode && (
-        <div className="mb-4">
-          <HistoryToolbar filters={filters} setFilters={setFilters} />
-        </div>
-      )}
+ {!selectionMode && (
+  <div className="flex justify-between items-center mb-2">
+    <HistoryToolbar filters={filters} setFilters={setFilters} />
+    
+    <button
+      onClick={() => {
+        setSelectionMode(true);
+        setSelectedIds([]);
+      }}
+      className="p-[10px] mt-[-16px] bg-yellow-600 hover:bg-yellow-700 rounded-full shadow transition-transform hover:scale-105"
+      title="Select Multiple"
+    >
+      <ListChecks size={20} />
+    </button>
+  </div>
+)}
+
+
 
       {/* Select Mode Actions */}
       {selectionMode && (
@@ -158,16 +171,7 @@ export default function HistoryScreen({ navigate }) {
           </div>
         </div>
       )}
-      {/* Select Multiple FAB */}
-{!selectionMode && groups.length > 0 && !loading && (
-  <button
-    onClick={() => setSelectionMode(true)}
-    className="mb-9 flex items-center justify-between gap-30 fixed bottom-24 right-1500left-1800 p-4 bg-yellow-500 hover:bg-yellow-600 rounded-full shadow-lg text-black z-50 transition-transform hover:scale-110"
-    title="Select Multiple"
-  >
-    <span className="text-lg font-bold"><ListChecks size={24} /></span>
-  </button>
-)}
+    
 
     </div>
   );

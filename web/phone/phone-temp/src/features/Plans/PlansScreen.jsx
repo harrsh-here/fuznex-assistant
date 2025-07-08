@@ -125,8 +125,14 @@ export default function PlansScreen() {
     try {
       await Promise.all(selectedItems.map((id) => api.delete(`/${route}/${id}`)));
       showToast("Deleted selected items");
+        showToast("Deleted");
+       await api.post("/history", {
+            assistant_name: "N/A",
+            interaction:`🗑️ Deleted ${selectedItems.length} ${activeTab}`,
+            type: type === "tasks" ? "todo" : "alarm",
+          });
     } catch {
-      alert("Error deleting selected items");
+      showToast("Error deleting selected items");
     } finally {
       cancelSelection();
       delete toastTimeouts.current[toastId];
@@ -179,8 +185,14 @@ export default function PlansScreen() {
     try {
       await api.delete(`/${route}/${id}`);
       showToast("Deleted");
+       await api.post("/history", {
+            assistant_name: "N/A",
+            interaction: `🗑️ Deleted ${type.slice(0, -1)}: ${title || label}`,
+            type: type === "tasks" ? "todo" : "alarm",
+          });
+
     } catch (err) {
-      alert("Error deleting item");
+      showToast("Error deleting item");
     } finally {
       delete toastTimeouts.current[toastId];
       setUndoToasts((prev) => prev.filter((t) => t.id !== toastId));
@@ -217,10 +229,10 @@ const applyUndo = (toast) => {
     } else {
       await api.delete(`/${pending.route}/${pending.ids}`);
     }
-
+    
     showToast("Deleted");
   } catch {
-    alert("Force delete failed.");
+    showToast("Force delete failed. Encountered an error deletion may succeed or failed");
   }
 
   delete pendingDeletions.current[id];
@@ -239,7 +251,7 @@ const applyUndo = (toast) => {
 
       loadAll();
     } catch {
-      alert("Failed to toggle completion");
+      showToast("Failed to toggle completion");
     }
   };
 

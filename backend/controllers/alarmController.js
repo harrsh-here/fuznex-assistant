@@ -2,7 +2,7 @@ const Alarm = require("../models/Alarm");
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 const Notification = require("../models/Notifications")(sequelize, DataTypes);
-
+const UserHistory = require('../models/UserHistory');
 // Convert "06:30 AM" -> "06:30", "07:15 PM" -> "19:15"
 function convertTo24Hour(timeStr12) {
   try {
@@ -56,7 +56,7 @@ exports.createAlarm = async (req, res) => {
   message: `Scheduled for ${finalDatetime}`,
   reminder_time: new Date(finalDatetime), // ensure it's a valid Date object
   is_important: true,                     // or false, based on your logic
-  status: "pending",                      // will be picked up by cron/worker
+  status: "is",                      // will be picked up by cron/worker
 });
 
 

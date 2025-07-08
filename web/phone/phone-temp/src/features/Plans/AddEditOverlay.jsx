@@ -161,16 +161,16 @@ export default function AddEditOverlay({ mode, item = null, onSave, onCancel }) 
           await api.put(`/alarms/${item.alarm_id}`, payload);
            await api.post("/history", {
             assistant_name: "N/A",
-            interaction: `Alarm modified: ${title}`,
-            type: "todo"
+            interaction: `Alarm modified: ${label}`,
+            type: "alarm"
           });
         } else {
           await api.post("/alarms", payload);
      
            await api.post("/history", {
             assistant_name: "N/A",
-            interaction: `Alarm created: ${title}`,
-            type: "todo"
+            interaction: `Alarm created: ${label}`,
+            type: "alarm"
           });
         }
       }

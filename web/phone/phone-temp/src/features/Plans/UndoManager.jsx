@@ -38,7 +38,7 @@ export default function UndoManager({ toasts, onUndo, onCancel }) {
     setTimeout(async () => {
       try {
         await onCancel(toast.id);
-        setToastMessage(`Deleted ${toast.type === "tasks" ? "task" : "alarm"}: "${toast.title}"`);
+        setToastMessage(`Deleted ${toast.type === "tasks" ? "task"  : "alarm"}: "${toast.title}"`);
       } finally {
         clearLoading(toast.id);
         setTimeout(() => setToastMessage(""), 2500);
