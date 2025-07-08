@@ -161,7 +161,7 @@ export default function AddEditOverlay({ mode, item = null, onSave, onCancel }) 
           await api.put(`/alarms/${item.alarm_id}`, payload);
            await api.post("/history", {
             assistant_name: "N/A",
-            interaction: `Alarm modified: ${label}`,
+            interaction: `Alarm modified: (${label} : ${displayTime})`,
             type: "alarm"
           });
         } else {
@@ -169,7 +169,7 @@ export default function AddEditOverlay({ mode, item = null, onSave, onCancel }) 
      
            await api.post("/history", {
             assistant_name: "N/A",
-            interaction: `Alarm created: ${label}`,
+            interaction: `Alarm created: (${label} : ${displayTime})`,
             type: "alarm"
           });
         }
