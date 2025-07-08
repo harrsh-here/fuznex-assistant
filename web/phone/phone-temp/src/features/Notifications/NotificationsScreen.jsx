@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { CaretLeft } from "phosphor-react";
 import api from "../../api/api";
 import NotificationCard from "./NotificationCard";
 import moment from "moment";
@@ -58,16 +59,17 @@ export default function NotificationScreen({ onNavigate }) {
   };
 
   return (
-    <div className="flex flex-col h-full px-5 py-6 pt-12 text-white">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+    <div className="flex flex-col h-full px-5 py-6 pt-12 text-white relative overflow-hidden">
+      {/* Header - same style as HistoryScreen */}
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => onNavigate("home")}
-          className="text-purple-400 hover:text-white transition"
+          className="p-2 rounded-lg bg-[#1e1e1e] border border-[#2a2a2a] text-gray-300 hover:text-white"
         >
-          ← Back
+          <CaretLeft size={20} />
         </button>
-        <h2 className="text-xl font-bold">Notifications</h2>
+        <h2 className="text-xl font-semibold">Notifications</h2>
+        <div className="w-8" /> {/* Spacer */}
       </div>
 
       {/* Notification List */}
@@ -98,7 +100,7 @@ export default function NotificationScreen({ onNavigate }) {
         )}
       </div>
 
-      {/* Clear All */}
+      {/* Clear All Button */}
       {!loading && notifications.length > 0 && (
         <button
           onClick={handleClearAll}
