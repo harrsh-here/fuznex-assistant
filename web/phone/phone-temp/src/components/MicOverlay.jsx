@@ -3,6 +3,7 @@ import {
   Mic,
   Send,
   Keyboard,
+  X
 } from "lucide-react";
 
 export default function MicOverlay({ onClose }) {
@@ -15,21 +16,24 @@ export default function MicOverlay({ onClose }) {
   const [boxMoved, setBoxMoved] = useState(false);
   const [boxAnimating, setBoxAnimating] = useState(false);
   const [startSlide, setStartSlide] = useState(false);
+  const [startClear, setStartClear] = useState(false);
   const inputRef = useRef(null);
 
   const handleSend = () => {
     if (!inputText.trim()) return;
-
     const userText = inputText.trim();
-    setInputText("");
-    setExpanded(false);
     setStartSlide(true);
     setBoxAnimating(true);
 
+    setTimeout(() => setStartClear(true), 50);
+    setTimeout(() => setExpanded(false), 100);
+
     setTimeout(() => {
+      setInputText("");
       setBoxMoved(true);
       setStartSlide(false);
-    }, 1800);
+      setStartClear(false);
+    }, 2000);
 
     setTimeout(() => {
       setHasSent(true);
@@ -38,7 +42,7 @@ export default function MicOverlay({ onClose }) {
         user: userText,
         ai: "This is F.R.I.D.A.Y.'s response to your query.",
       });
-    }, 2100);
+    }, 2200);
   };
 
   const wordCount = inputText.trim().split(/\s+/).filter(Boolean).length;
@@ -64,17 +68,17 @@ export default function MicOverlay({ onClose }) {
     <div className="absolute inset-0 bg-black/70 backdrop-blur-xl border border-white/10 flex flex-col z-50 px-4 pt-6 pb-3 text-white transition-all duration-300 overflow-hidden">
       <button
         onClick={onClose}
-        className="absolute top-6 right-6 text-white text-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-red-600 hover:text-white p-2 rounded-full transition"
+        className="absolute top-6 right-6 text-white text-xl bg-white/10 border border-white/20 hover:bg-red-600 hover:text-white p-2 rounded-full transition"
         title="Close"
       >
-        ×
+        <X className="w-5 h-5" />
       </button>
 
       {!textMode && (
         <div className="flex flex-col items-center justify-center space-y-6 flex-grow px-4">
           <div className="relative">
             <span className="absolute w-24 h-24 rounded-full border-2 border-purple-400 animate-ping-slow opacity-60 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></span>
-            <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-pink-500 blur-md opacity-100 animate-pulse top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+            <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-pink-500 opacity-100 animate-pulse top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
 
             <div className="relative p-6 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-md animate-pop z-10">
               <Mic size={36} className="text-white animate-pulse-glow" />
@@ -98,14 +102,16 @@ export default function MicOverlay({ onClose }) {
 
       {textMode && (
         <div
-          className={`w-full max-w-md mx-auto flex flex-col transition-all ${startSlide ? "duration-[2000ms] ease-in-out" : "duration-500"} flex-grow ${
-            boxMoved ? "justify-end" : "justify-center"
-          }`}
+          className={`w-full max-w-md mx-auto flex flex-col transform transition-all duration-[2000ms] ease-in-out ${
+            boxMoved ? "translate-y-0 justify-end" : "justify-center"
+          } flex-grow`}
         >
           {!hasSent && (
             <div
-              className={`relative glassmorphic border border-[#333] rounded-xl px-3 py-2 shadow-inner transition-all duration-700 ease-in-out flex items-center gap-2 ${
-                expanded ? "min-h-[120px]" : "h-[56px]"
+              className={`relative glassmorphic border border-[#333] rounded-xl px-3 py-2 shadow-inner transition-transform duration-[2000ms] ease-in-out ${
+                startSlide ? "translate-y-36" : "translate-y-0"
+              } flex items-center gap-2 ${
+                expanded && !startSlide ? "min-h-[120px]" : "h-[56px]"
               } animate-slide-down-glow`}
             >
               <button
@@ -134,7 +140,7 @@ export default function MicOverlay({ onClose }) {
               <textarea
                 ref={inputRef}
                 rows={expanded ? 3 : 1}
-                value={inputText}
+                value={startClear ? "" : inputText}
                 placeholder="Type your message here..."
                 onChange={(e) => {
                   if (wordCount <= wordLimit) {
