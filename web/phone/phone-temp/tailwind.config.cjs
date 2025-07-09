@@ -5,12 +5,7 @@ module.exports = {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
-    extend: {},
-  },
-   plugins: [require("tailwind-scrollbar")],
-
-   
-  extend: {
+    extend: {
   animation: {
     'ping-slow': 'ping 2.5s ease-in-out infinite',
     'pop': 'pop 1.8s ease-in-out infinite',
@@ -31,6 +26,10 @@ module.exports = {
       '100%': { transform: 'scale(1)', opacity: 1 },
     },
   },
-}
+},
+  },
+   plugins: [require("tailwind-scrollbar")],
 
+   
+ 
 };
