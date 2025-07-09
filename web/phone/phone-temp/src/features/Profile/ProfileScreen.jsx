@@ -1,8 +1,13 @@
-// src/features/Profile/ProfileScreen.jsx
+// ProfileScreen.jsx
 import React from "react";
-import { Gear } from "phosphor-react"; // or any other icon library you're using
+import { Gear, Clock } from "phosphor-react";
 
-export default function ProfileScreen({ user, onLogout, onEditProfile }) {
+export default function ProfileScreen({
+  user,
+  onLogout,
+  onEditProfile,
+  onNavigate, // ← required
+}) {
   const { name, email, avatar_url } = user || {};
 
   return (
@@ -20,31 +25,42 @@ export default function ProfileScreen({ user, onLogout, onEditProfile }) {
         </div>
       </div>
 
-    {/* Edit Profile & Settings */}
-<div className="flex justify-between items-center mb-4">
-  <button
-    onClick={onEditProfile}
-    className="text-xs text-purple-400 underline"
-  >
-    Edit Profile
-  </button>
-  <button
-    onClick={() => console.log("Settings clicked")}
-    className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition"
-  >
-    <Gear size={16} />
-    Settings
-  </button>
-</div>
+      {/* Edit & Settings */}
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={onEditProfile}
+          className="text-xs text-purple-400 underline"
+        >
+          Edit Profile
+        </button>
+        <button
+          onClick={() => console.log("Settings clicked")}
+          className="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition"
+        >
+          <Gear size={16} />
+          Settings
+        </button>
+      </div>
 
       {/* Assistant Selection */}
-      <div className="mb-6">
+      <div className="mb-4">
         <label className="block text-sm text-gray-400 mb-1">Default Assistant</label>
         <select className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded-xl text-white text-sm">
           <option>GPT Assistant</option>
           <option>Alexa</option>
           <option>Google Assistant</option>
         </select>
+      </div>
+
+      {/* 🔓 Interaction History - NOW WORKS AND NO BORDER */}
+      <div className="mb-6">
+        <button
+          onClick={() => onNavigate?.("history")}
+          className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-purple-400 rounded-xl hover:bg-purple-700/10 transition"
+        >
+          <Clock size={18} />
+          Interaction History
+        </button>
       </div>
 
       {/* Device & App Info */}

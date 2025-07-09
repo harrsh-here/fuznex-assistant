@@ -18,6 +18,8 @@ export default function App() {
   const [activePath, setActivePath] = useState("home");
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+const [lastScreen, setLastScreen] = useState(null);
+
 
   const isAuthenticated = !!user;
 
@@ -28,6 +30,8 @@ export default function App() {
     }
   };
 
+
+  
   const checkLogin = async () => {
     const accessToken = localStorage.getItem("token");
     const refreshToken = localStorage.getItem("refreshToken");
@@ -121,8 +125,10 @@ export default function App() {
     setActivePath("home");
   };
 
-  const navigateTo = (path) => setActivePath(path);
-
+  const navigateTo = (path, extras = {}) => {
+  setLastScreen(activePath);
+  setActivePath(path);
+};
   const renderScreen = () => {
     switch (activePath) {
       case "plans": return <ErrorBoundary><PlansScreen /></ErrorBoundary>;
@@ -131,10 +137,14 @@ export default function App() {
       case "fitness": return<ErrorBoundary>
   <FitnessScreen />
 </ErrorBoundary>;
-      case "history": return <ErrorBoundary><HistoryScreen /></ErrorBoundary>;
-      case "profile": return <ErrorBoundary><ProfileScreen user={user} onLogout={handleLogout} onEditProfile={() => navigateTo("edit-profile")} /></ErrorBoundary>;
+//homescreen
+      case "history": return <ErrorBoundary><HistoryScreen   navigate={navigateTo}
+        from={lastScreen || "home"} /></ErrorBoundary>;
+
+
+      case "profile": return <ErrorBoundary><ProfileScreen user={user} onLogout={handleLogout} onEditProfile={() => navigateTo("edit-profile")} onNavigate={navigateTo} /></ErrorBoundary>;
       case "edit-profile": return <ErrorBoundary><EditProfileScreen user={user} onBack={() => navigateTo("profile")} /></ErrorBoundary>;
-      case "notifications": return<ErrorBoundary> <NotificationsScreen onNavigate={navigateTo} /></ErrorBoundary>;
+      case "notifications": return<ErrorBoundary> <NotificationsScreen onNavigate={navigateTo} from={lastScreen || "home"} /></ErrorBoundary>;
       default: return <ErrorBoundary><HomeScreen onNavigate={navigateTo} /></ErrorBoundary>;
     }
   };

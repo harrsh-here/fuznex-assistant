@@ -309,6 +309,12 @@ useEffect(() => {
           </div>
         </div>
       )}
+      <button
+  id="mic-assist-activate"
+  onClick={() => setListening(true)}
+  className="hidden"
+></button>
+
     </div>
   );
 }

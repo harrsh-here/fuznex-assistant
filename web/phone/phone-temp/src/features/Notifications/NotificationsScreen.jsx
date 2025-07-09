@@ -4,7 +4,7 @@ import api from "../../api/api";
 import NotificationCard from "./NotificationCard";
 import moment from "moment";
 
-export default function NotificationScreen({ onNavigate }) {
+export default function NotificationScreen({ onNavigate, from = "home" }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,7 +63,7 @@ export default function NotificationScreen({ onNavigate }) {
       {/* Header - same style as HistoryScreen */}
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => onNavigate("home")}
+          onClick={() => onNavigate(from)}
           className="p-2 rounded-lg bg-[#1e1e1e] border border-[#2a2a2a] text-gray-300 hover:text-white"
         >
           <CaretLeft size={20} />

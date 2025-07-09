@@ -12,7 +12,7 @@ import HistoryList from "./components/HistoryList";
 import HistoryEmptyState from "./components/HistoryEmptyState";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 
-export default function HistoryScreen({ navigate }) {
+export default function HistoryScreen({ navigate, from = "home" }) {
   const [filters, setFilters] = useState({ type: "all", assistant: "all" });
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -71,7 +71,7 @@ export default function HistoryScreen({ navigate }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => navigate?.(-1)}
+          onClick={() => navigate?.(from)}
           className="p-2 rounded-lg bg-[#1e1e1e] border border-[#2a2a2a] text-gray-300 hover:text-white"
         >
           <CaretLeft size={20} />
