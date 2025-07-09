@@ -1,132 +1,162 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Mic, Keyboard, X } from "lucide-react";
 import TypingInputBox from "./TypingInputBox";
 import MicSpeechCapture from "./MicSpeechCapture";
 
 export default function MicOverlay({ onClose }) {
-  const [textMode, setTextMode] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [response, setResponse] = useState(null);
-  const [hasSent, setHasSent] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [response, setResponse] = useState("");
+  const [hasSent, setHasSent] = useState(false);
+  const [textMode, setTextMode] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState("");
 
-  const handleSpeechComplete = (text) => {
-    if (!text.trim()) return;
+  // 👂 Live speech recognition setup
+  const recognitionRef = useRef(null);
 
-    setTranscript(text);
-    setTimeout(() => {
-      setHasSent(true);
-      setResponse({
-        user: text,
-        ai: "This is F.R.I.D.A.Y.'s response to your voice query.",
-      });
-    }, 1000);
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0].transcript)
+        .join("");
+      setLiveTranscript(transcript);
+    };
+
+    recognition.onerror = (e) => {
+      console.error("Speech recognition error:", e);
+    };
+
+    recognitionRef.current = recognition;
+  }, []);
+  // 🔁 Start/stop speech recognition based on listening state
+  useEffect(() => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
+    if (isListening) {
+      recognition.start();
+    } else {
+      recognition.stop();
+    }
+
+    return () => {
+      recognition.stop();
+    };
+  }, [isListening]);
+
+  const handleTranscript = (text) => {
+    setIsListening(false);
+    const finalText = text || liveTranscript;
+    setTranscript(finalText);
+    setLiveTranscript("");
+    if (!finalText.trim()) return;
+    setHasSent(true);
+    setTimeout(() => setResponse(`You said: ${finalText}`), 500);
   };
 
-  const handleReset = () => {
+  const resetAll = () => {
+    setIsListening(false);
     setTranscript("");
+    setResponse("");
     setHasSent(false);
-    setResponse(null);
-    setIsListening(false); // ✅ Stop mic cleanly
+    setTextMode(false);
+    setLiveTranscript("");
   };
 
-  const handleClose = () => {
-    setIsListening(false); // ✅ Stop mic first
-    onClose(); // ✅ Then close the overlay
+  const close = () => {
+    resetAll();
+    onClose();
   };
 
   return (
-    <div className="absolute inset-0 bg-black/70 backdrop-blur-xl border border-white/10 flex flex-col z-50 px-4 pt-6 pb-3 text-white transition-all duration-300 overflow-hidden">
+    <div className="absolute inset-0 bg-black/70 backdrop-blur-xl flex flex-col z-50 px-4 pb-4 pt-[env(safe-area-inset-top)] text-white">
+      {/* Close Button */}
       {!textMode && !hasSent && (
         <button
-          onClick={handleClose}
-          className="absolute top-6 right-6 text-white text-xl bg-white/10 border border-white/20 hover:bg-red-600 hover:text-white p-2 rounded-full transition"
-          title="Close"
+          onClick={close}
+          className="absolute top-4 right-4 p-2 bg-white/10 rounded-full transition"
         >
-          <X className="w-5 h-5" />
+          <X size={20} />
         </button>
       )}
 
+      {/* Voice Mode */}
       {!textMode && !hasSent && (
-        <div className="flex flex-col items-center justify-center space-y-6 flex-grow px-4">
+        <div className="flex flex-col flex-1 items-center justify-center space-y-6">
+          {/* Mic Button + Glow */}
           <div
-            className="relative cursor-pointer"
-            onClick={() => setIsListening((prev) => !prev)}
+            onClick={() => setIsListening((v) => !v)}
+            className="relative flex items-center justify-center w-24 h-24 cursor-pointer"
           >
-            <span
-              className={`absolute w-24 h-24 rounded-full border-2 ${
-                isListening
-                  ? "border-purple-400 animate-ping-slow opacity-60"
-                  : "border-white/10 opacity-20"
-              } top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
-            ></span>
-            <div
-              className={`absolute w-24 h-24 rounded-full ${
-                isListening
-                  ? "bg-gradient-to-br from-purple-500 via-indigo-500 to-pink-500 animate-pulse"
-                  : "bg-white/10"
-              } top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
-            ></div>
-
-            <div className="relative p-6 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-md animate-pop z-10">
+            {isListening && (
+              <>
+                <span className="absolute w-full h-full rounded-full border-2 border-purple-400 animate-ping opacity-50" />
+                <div className="absolute w-full h-full rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-pink-500 blur-md animate-pulse opacity-40" />
+              </>
+            )}
+            <div className="relative z-10 w-16 h-16 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-md transition-all duration-300 animate-pop">
               <Mic
-                size={36}
-                className={`text-white ${
-                  isListening ? "animate-pulse-glow" : ""
-                }`}
+                size={32}
+                className={isListening ? "text-white animate-pulse-glow" : "text-white"}
               />
             </div>
           </div>
 
-          <h2 className="text-lg font-semibold text-indigo-200">
-            {isListening ? "Listening..." : "Tap mic to speak"}
-          </h2>
+          {/* Prompt + Transcript */}
+          <div className="flex flex-col items-center space-y-1">
+            <h2 className="text-lg font-semibold text-indigo-200 text-center">
+              {isListening ? "Recording…" : "Tap mic to speak"}
+            </h2>
+            {liveTranscript && (
+              <p className="text-sm text-white/70 text-center max-w-xs px-4 break-words">
+                <span className="text-purple-400">Listening:</span> {liveTranscript}
+              </p>
+            )}
+          </div>
 
           <MicSpeechCapture
             isListening={isListening}
-            onStop={handleSpeechComplete}
+            onTranscript={handleTranscript}
             showTranscript
           />
 
           <button
-            onClick={() => setTextMode(true)}
+            onClick={() => { resetAll(); setTextMode(true); }}
             className="flex items-center text-sm text-white/80 hover:text-purple-300 transition"
           >
-            <Keyboard className="w-4 h-4 mr-2" />
+            <Keyboard size={16} className="mr-1" />
             Prefer typing instead?
           </button>
         </div>
       )}
 
+      {/* Typing Mode */}
       {textMode && (
         <TypingInputBox
-          onClose={handleClose}
-          onBack={() => {
-            setTextMode(false);
-            handleReset();
-          }}
+          onClose={close}
+          onBack={resetAll}
+          presetText={transcript}
         />
       )}
 
-      {hasSent && response && (
-        <div className="mt-auto space-y-4 pb-4 animate-fade-in-up">
-          <div className="space-y-4">
-            <div className="flex justify-end">
-              <div className="bg-[#181818] border border-[#2c2c2c] rounded-xl p-3 max-w-[75%]">
-                <p className="text-xs text-gray-500 mb-1 text-right">You</p>
-                <p className="text-sm text-gray-300 whitespace-pre-wrap text-right">
-                  {response.user}
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-start">
-              <div className="bg-[#1e1e1e] border border-[#333] rounded-xl p-3 max-w-[85%]">
-                <p className="text-xs text-purple-400 mb-1">F.R.I.D.A.Y.</p>
-                <p className="text-sm text-white whitespace-pre-wrap">
-                  {response.ai}
-                </p>
-              </div>
-            </div>
+      {/* Response Mode */}
+      {hasSent && (
+        <div className="flex flex-col flex-grow justify-center items-center space-y-4 px-2">
+          <div className="self-end bg-[#181818] border border-[#2c2c2c] rounded-xl p-3 max-w-[75%]">
+            <p className="text-xs text-gray-500 mb-1 text-right">You</p>
+            <p className="text-sm text-gray-300 text-right">{transcript}</p>
+          </div>
+          <div className="self-start bg-[#1e1e1e] border border-[#333] rounded-xl p-3 max-w-[85%]">
+            <p className="text-xs text-purple-400 mb-1">F.R.I.D.A.Y.</p>
+            <p className="text-sm text-white">{response}</p>
           </div>
         </div>
       )}

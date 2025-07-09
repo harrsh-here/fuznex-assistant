@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Bell, PlusCircle } from "lucide-react";
+import ShrijiBox from "./ShrijiBox"; // This stays separated and sacred ✨
 
 const upcomingEvents = [
   "📅 Meeting at 4:00 PM with the AI team.",
@@ -9,14 +10,26 @@ const upcomingEvents = [
 
 export default function HomeScreen({ onNavigate, user }) {
   const [expandedText, setExpandedText] = useState(null);
-  const { name, avatar_url } = user || {};
+  const [shrijiVisible, setShrijiVisible] = useState(false);
+  const [shrijiTapCount, setShrijiTapCount] = useState(0);
+  const { name } = user || {};
 
   const handleExpand = (text) => setExpandedText(text);
   const closeExpand = () => setExpandedText(null);
 
+  const handleShrijiTap = () => {
+    setShrijiTapCount((prev) => {
+      const next = prev + 1;
+      if (next >= 11) {
+        setShrijiVisible(true);
+        return 0; // reset after open
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className="flex flex-col h-full px-5 py-6 pt-12 text-white bg-[#0f0f0f] overflow-y-auto scrollbar-none">
-      
+    <div className="flex flex-col h-full px-5 py-6 pt-12 text-white bg-[#0f0f0f] overflow-y-auto scrollbar-none relative">
       {/* Greeting */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -31,12 +44,12 @@ export default function HomeScreen({ onNavigate, user }) {
           className="relative bg-transparent"
           onClick={() => onNavigate("notifications")}
         >
-          <Bell className="w-6 h-6 text-purple-400 " />
+          <Bell className="w-6 h-6 text-purple-400" />
           <span className="absolute top-[4px] right-[17px] w-2 h-2 bg-purple-500 rounded-full" />
         </button>
       </div>
 
-      {/* Quick Action Cards */}
+      {/* Task & Alarm Cards */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="flex flex-col gap-2 bg-[#1e1e1e] p-4 rounded-xl border border-[#2a2a2a]">
           <button
@@ -84,10 +97,18 @@ export default function HomeScreen({ onNavigate, user }) {
         </div>
       </div>
 
-      {/* Bottom Spacing */}
-      <div className="h-16" />
+      {/* 🪄 Secret Shriji Trigger */}
+      <div
+        onClick={handleShrijiTap}
+        className="text-center text-xs italic text-purple-400 opacity-80 cursor-pointer hover:text-purple-300 transition mb-10"
+      >
+        "The soul knows the melody only she sings."
+      </div>
 
-      {/* Expanded Detail Overlay */}
+      {/* Spacer for navbar */}
+      <div className="h-20" />
+
+      {/* Expanded View */}
       {expandedText && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-5"
@@ -101,6 +122,9 @@ export default function HomeScreen({ onNavigate, user }) {
           </div>
         </div>
       )}
+
+      {/* ✨ Shriji Box Appears Here */}
+      {shrijiVisible && <ShrijiBox onClose={() => setShrijiVisible(false)} />}
     </div>
   );
 }
