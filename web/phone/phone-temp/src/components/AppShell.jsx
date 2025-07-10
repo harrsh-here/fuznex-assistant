@@ -36,7 +36,7 @@ export default function AppShell({ activePath, onNavigate, children }) {
       {/* Bottom Navbar */}
       <div className="relative">
         {/* Bottom Nav Icons */}
-        <div className="grid grid-cols-5 items-center px-2 py-1.5 border-t border-[#2a2a2a] bg-[#0f0f0f] text-gray-400 z-10">
+        <div className="grid grid-cols-5 items-center px-2 py-1.5 border-t border-[#2a2a2a] bg-[#0f0f0f] text-gray-400 z-60">
           {tabs.map((tab, index) => (
             <div key={index} className="flex flex-col items-center justify-center">
               {tab.icon && (
@@ -57,7 +57,7 @@ export default function AppShell({ activePath, onNavigate, children }) {
         {/* Floating Mic Button - Glassmorphic Style */}
        {/* Floating Mic Button - Enhanced Gradient Glow */}
 {/* Floating Mic Button - With Animated Listening Ring */}
-<div className="absolute left-1/2 transform -translate-x-1/2 -top-6 z-20">
+<div className="absolute left-1/2 transform -translate-x-1/2 -top-6 z-[50]">
   <div className="relative flex items-center justify-center">
     {/* Animated Ring */}
     <span className="absolute w-[3.79rem] h-[3.79rem] rounded-full border-2 border-indigo-400 animate-ping-slow opacity-50"></span>

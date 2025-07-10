@@ -15,12 +15,12 @@ export default function GreetingHeader({ user, unreadCount = 0, onNotifications 
 
       <button
         onClick={onNotifications}
-        className="relative rounded-full hover:scale-105 transition-transform"
+        className="relative rounded-full hover:scale-105 transition-transform bg-transparent " 
         aria-label="Notifications"
       >
         <Bell className="w-6 h-6 text-purple-400" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 w-2 h-2 bg-purple-500 rounded-full" />
+          <span className="absolute top-[3px] right-[15px] w-2 h-2 bg-purple-500 rounded-full" />
         )}
       </button>
     </div>

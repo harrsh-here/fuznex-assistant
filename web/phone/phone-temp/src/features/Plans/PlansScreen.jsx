@@ -15,7 +15,8 @@ import { logHistory } from "../../utils/logHistory";
 
 
 
-export default function PlansScreen() {
+export default function PlansScreen({event}) {
+  
   const [activeTab, setActiveTab] = useState("tasks");
   const [tasks, setTasks] = useState([]);
   const [alarms, setAlarms] = useState([]);
@@ -38,6 +39,7 @@ export default function PlansScreen() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 
+
   const refreshInterval = useRef(null);
 
   // INITIAL & AUTO LOAD
@@ -47,7 +49,18 @@ export default function PlansScreen() {
     return () => clearInterval(refreshInterval.current);
   }, []);
 
-  
+  useEffect(() => {
+  if (event?.type === "alarms") {
+    setActiveTab("alarms");
+  } else if (event?.type === "tasks") {
+    setActiveTab("tasks");
+  }
+  // Optionally preload the detail view
+  if (event?.title || event?.label) {
+    setDetailItem({ ...event, type: event.type });
+  }
+}, [event]);
+
 
   const loadAll = async (silent = false) => {
     if (!silent) setLoading(true);

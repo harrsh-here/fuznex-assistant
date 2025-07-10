@@ -39,7 +39,7 @@ export default function ShrijiBox({ onClose }) {
         <p className="text-sm text-gray-200 whitespace-pre-line font-[500] tracking-wide leading-relaxed">
           {`ये दुनिया, ये लोग, ये रिश्ते,\nये सब जाली है,\nमसलन अब तो कुछ बचा भी है क्या,\nतू ही इश्क़ तू ही जीवन,\nतू ही सवेरे की रोशनी प्रतिभा–शाली है\nतेरे सिवा मधुबन भी जर्जर पवन\nऔर तेरे सिवा बिताई ये रातें भी बस\nअंधेरी घनी और काली है\nप्रिये तुम वो राधा हो,\nजिसके बिना मेरे हृदय का वृंदावन खाली है।`}
         </p>
-
+    
         {/* Soft Glow Ring */}
         <div className="absolute inset-0 rounded-2xl border border-purple-500 opacity-20 animate-pulse pointer-events-none" />
       </div>

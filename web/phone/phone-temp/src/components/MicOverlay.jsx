@@ -77,7 +77,7 @@ export default function MicOverlay({ onClose }) {
   };
 
   return (
-    <div className="absolute inset-0 bg-black/70 backdrop-blur-xl flex flex-col z-50 px-4 pb-4 pt-[env(safe-area-inset-top)] text-white">
+    <div className="absolute inset-0 bg-black/70 backdrop-blur-xl flex flex-col z-[60] px-4 pb-4 pt-[env(safe-area-inset-top)] text-white">
       {/* Close Button */}
       {!textMode && !hasSent && (
         <button

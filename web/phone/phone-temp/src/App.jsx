@@ -19,6 +19,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 const [lastScreen, setLastScreen] = useState(null);
+const [activeParams, setActiveParams] = useState(null);
 
 
   const isAuthenticated = !!user;
@@ -90,14 +91,14 @@ const [lastScreen, setLastScreen] = useState(null);
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) throw new Error("Missing refresh token");
 
-        const { data } = await api.post("/users/refresh", { refreshToken });
+        const { data } = await api.post("/users/refresh-token", { refreshToken });
         applyAccessToken(data.accessToken);
-        console.log("[Token Auto-Refreshed]");
+        
       } catch (err) {
         console.error("[Auto Refresh Error]:", err);
         logoutImmediately();
       }
-    }, 45 * 60 * 1000);
+    }, 30 * 10 * 1000);
 
     return () => clearInterval(interval);
   }, [isAuthenticated]);
@@ -125,13 +126,22 @@ const [lastScreen, setLastScreen] = useState(null);
     setActivePath("home");
   };
 
-  const navigateTo = (path, extras = {}) => {
+  const navigateTo = (path, extras = {}, params = null) => {
   setLastScreen(activePath);
-  setActivePath(path);
+    setActivePath(path);
+    setActiveParams(params);
+  
 };
   const renderScreen = () => {
     switch (activePath) {
-      case "plans": return <ErrorBoundary><PlansScreen /></ErrorBoundary>;
+
+
+      case "plans": return <ErrorBoundary><PlansScreen  tabParam={activeParams?.tab}
+        modeParam={activeParams?.mode}
+         event={activeParams?.event}
+         /></ErrorBoundary>;
+
+
       case "chat": return <ErrorBoundary><ChatScreen /></ErrorBoundary>;
       case "home": return<ErrorBoundary><HomeScreen onNavigate={navigateTo} user={user} /></ErrorBoundary>;
       case "fitness": return<ErrorBoundary>

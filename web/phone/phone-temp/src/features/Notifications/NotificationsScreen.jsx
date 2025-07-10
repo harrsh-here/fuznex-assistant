@@ -95,6 +95,7 @@ export default function NotificationScreen({ onNavigate, from = "home" }) {
               notification={note}
               onNavigate={handleNavigate}
               onMarkAsRead={markAsRead}
+              
             />
           ))
         )}
