@@ -59,21 +59,26 @@ export default function AppShell({ activePath, onNavigate, children }) {
 {/* Floating Mic Button - With Animated Listening Ring */}
 <div className="absolute left-1/2 transform -translate-x-1/2 -top-6 z-[50]">
   <div className="relative flex items-center justify-center">
-    {/* Animated Ring */}
-    <span className="absolute w-[3.79rem] h-[3.79rem] rounded-full border-2 border-indigo-400 animate-ping-slow opacity-50"></span>
+    
 
-    {/* Gradient Glow Behind */}
-    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-500 blur-md opacity-60 animate-pulse"></div>
+    {/* Gradient Blur Behind */}
+    <div className="absolute w-16 h-16 rounded-full bg-gradient-to-br from-purple-700 via-indigo-500 to-pink-300 blur-md opacity-60"></div>
 
-    {/* Mic Button */}
+    {/* Mic Button (Inner Core) */}
     <button
-      onClick={handleMicClick}
-      className="relative p-4 rounded-full bg-gradient-to-br from-purple-600 via-violet-700 to-blue-600 text-white shadow-lg hover:scale-105 transition-all duration-300"
-    >
-      <Microphone size={24} className="text-white drop-shadow-md" />
-    </button>
+  onClick={handleMicClick}
+  className="relative z-50 mt-[-7px] w-[4.0rem] h-[4.0rem] flex items-center justify-center rounded-full text-white shadow-lg border border-white/20 backdrop-blur-md transition-all duration-300 hover:scale-105 "
+  style={{
+    background: "linear-gradient(330deg, #4f46e5, #7e22ce)", // purple → pink → indigo
+    boxShadow: "0 0 55px 0px rgba(168, 85, 247, 0.5)", // glow
+  }}
+>
+  <Microphone size={30} className="text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.3)] "  />
+</button>
+
   </div>
 </div>
+
 
 
 

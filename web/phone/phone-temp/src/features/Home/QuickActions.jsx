@@ -43,7 +43,7 @@ export default function QuickActions({ onNavigate }) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 mt-6 mb-6">
+      <div className="grid grid-cols-2 gap-4 mt-3 mb-6">
         <ActionCard
           label="Tasks"
           onAddClick={() => setOverlay("task")}

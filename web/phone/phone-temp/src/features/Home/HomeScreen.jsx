@@ -92,7 +92,7 @@ export default function HomeScreen({ onNavigate, user }) {
       {/* 🪄 Secret Shriji Trigger */}
       <div
         onClick={handleShrijiTap}
-        className="p-4 text-center text-xs italic text-purple-400 opacity-80 cursor-pointer hover:text-purple-300 transition mb-10"
+        className="p-4 text-center text-xs italic text-purple-400 opacity-80 cursor-pointer hover:text-purple-300 transition mb-1"
       >
         "until we meet again..🥺"
       </div>

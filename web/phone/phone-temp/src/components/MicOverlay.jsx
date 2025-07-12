@@ -91,24 +91,28 @@ export default function MicOverlay({ onClose }) {
       {/* Voice Mode */}
       {!textMode && !hasSent && (
         <div className="flex flex-col flex-1 items-center justify-center space-y-6">
-          {/* Mic Button + Glow */}
-          <div
-            onClick={() => setIsListening((v) => !v)}
-            className="relative flex items-center justify-center w-24 h-24 cursor-pointer"
-          >
-            {isListening && (
-              <>
-                <span className="absolute w-full h-full rounded-full border-2 border-purple-400 animate-ping opacity-50" />
-                <div className="absolute w-full h-full rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-pink-500 blur-md animate-pulse opacity-40" />
-              </>
-            )}
-            <div className="relative z-10 w-16 h-16 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-md transition-all duration-300 animate-pop">
-              <Mic
-                size={32}
-                className={isListening ? "text-white animate-pulse-glow" : "text-white"}
-              />
-            </div>
-          </div>
+     {/* Mic Button + Glow */}
+<div
+  onClick={() => setIsListening((v) => !v)}
+  className="relative flex items-center justify-center w-24 h-24 cursor-pointer"
+>
+  {isListening && (
+    <>
+      <span className="absolute w-full h-full rounded-full border-2 border-purple-400 animate-ping opacity-100" />
+<div className="absolute w-full h-full rounded-full bg-[radial-gradient(ellipse_at_center,_rgba(216,180,254,0.5)_55%,_rgba(147,197,255,0.9)_70%,_rgba(251,113,133,0.9)_90%)] blur-2xl animate-pulse opacity-100" />
+
+
+
+    </>
+  )}
+  <div className="relative z-10 w-16 h-16 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-md transition-all duration-300 animate-pop">
+    <Mic
+      size={32}
+      className={isListening ? "text-white animate-pulse-glow" : "text-white"}
+    />
+  </div>
+</div>
+
 
           {/* Prompt + Transcript */}
           <div className="flex flex-col items-center space-y-1">

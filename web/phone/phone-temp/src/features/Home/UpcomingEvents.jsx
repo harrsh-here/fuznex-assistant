@@ -7,61 +7,72 @@ import api from "../../api/api";
 export default function UpcomingEvents({ onNavigate }) {
   const [events, setEvents] = useState([]);
   const [expandedItem, setExpandedItem] = useState(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  const getNextOccurrence = (dateStr, pattern) => {
+    let base = moment(dateStr, "YYYY-MM-DD HH:mm:ss");
+    const now = moment();
+
+    if (pattern === "once") return base;
+
+    while (base.isBefore(now)) {
+      if (pattern === "daily") base.add(1, "day");
+      else if (pattern === "weekly") base.add(1, "week");
+      else if (pattern === "monthly") base.add(1, "month");
+      else break;
+    }
+    return base;
+  };
 
   const fetchEvents = async () => {
     try {
       const [tasksRes, alarmsRes] = await Promise.all([
         api.get("/todos"),
-        api.get("/alarms")
+        api.get("/alarms"),
       ]);
 
+      const now = moment();
       const tasks = tasksRes.data || [];
       const alarms = alarmsRes.data || [];
-      const now = new Date();
 
-      const formattedTasks = tasks.map(t => {
-        const hasDate = !!t.due_date;
-        const dueDate = hasDate ? new Date(t.due_date) : null;
+      const formattedTasks = tasks
+        .filter((t) => t.due_date && moment(t.due_date, "YYYY-MM-DD HH:mm:ss").isAfter(now))
+        .map((t) => {
+          const due = moment(t.due_date, "YYYY-MM-DD HH:mm:ss");
+          return {
+            id: t.task_id,
+            type: "task",
+            title: t.title,
+            date: due,
+            priority: t.priority || "low",
+            display: `📝 ${t.title}`,
+            subtext: due.format("MMM D, YYYY • hh:mm A"),
+          };
+        });
 
-        return {
-          id: t.task_id,
-          type: "task",
-          title: t.title,
-          description: t.description || "",
-          date: dueDate,
-          display: hasDate
-            ? `📝 ${t.title} at ${moment(t.due_date).format("hh:mm A")}`
-            : `📝 ${t.title} (no due date)`
-        };
-      });
+      const formattedAlarms = alarms
+        .filter((a) => a.is_active)
+        .map((a) => {
+          const next = getNextOccurrence(a.alarm_time, a.repeat_pattern);
+          if (next.isAfter(now)) {
+            return {
+              id: a.alarm_id,
+              type: "alarm",
+              title: a.label || "Alarm",
+              date: next,
+              display: `⏰ ${a.label || "Alarm"}`,
+              subtext: next.format("hh:mm A"),
+            };
+          }
+          return null;
+        })
+        .filter(Boolean);
 
-      const formattedAlarms = alarms.map(a => {
-  const fullDate = new Date(a.alarm_time); // directly use the full datetime
-  return {
-    id: a.alarm_id,
-    type: "alarm",
-    title: a.label || "Alarm",
-    date: fullDate,
-    description: "",
-    display: `⏰ ${a.label || "Alarm"} at ${moment(fullDate).format("hh:mm A")}`
-  };
-});
-
-      const upcoming = [...formattedTasks, ...formattedAlarms]
-        .filter(e => e.date && e.date > now)
+      const combined = [...formattedTasks, ...formattedAlarms]
         .sort((a, b) => a.date - b.date)
         .slice(0, 5);
 
-      if (upcoming.length > 0) {
-        setEvents(upcoming);
-        return;
-      }
-
-      const fallback = formattedTasks
-        .filter(t => !t.date || t.date < now)
-        .slice(0, 5);
-
-      setEvents(fallback);
+      setEvents(combined);
     } catch (err) {
       console.error("[Event Fetch Error]", err);
     }
@@ -69,9 +80,23 @@ export default function UpcomingEvents({ onNavigate }) {
 
   useEffect(() => {
     fetchEvents();
-    const interval = setInterval(fetchEvents, 60000);
+    const interval = setInterval(fetchEvents, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setHasLoaded(true);
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  const getPriorityColor = (priority) => {
+    if (priority === "high") return "text-red-400";
+    if (priority === "medium") return "text-yellow-400";
+    return "text-gray-400";
+  };
+
   const handleClick = (eventItem) => {
     setExpandedItem(eventItem);
   };
@@ -82,51 +107,72 @@ export default function UpcomingEvents({ onNavigate }) {
         <h3 className="text-sm font-semibold text-gray-400">Upcoming Events</h3>
         <button
           onClick={() => onNavigate("plans")}
-          className="text-purple-400 text-xs hover:underline"
+          className="text-purple-400 text-xs hover:underline bg-transparent border-0"
         >
           View More &gt;
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 min-h-[72px]">
         {events.length === 0 ? (
-          <div className="text-xs text-gray-500">No upcoming events</div>
+          <div className="flex flex-col items-center text-center py-10 text-gray-400">
+            <div className="text-[48px] mb-2">📅</div>
+            <p className="text-base font-medium">No upcoming events</p>
+            <p className="text-xs mt-1 text-gray-500">Add a task or alarm to get started!</p>
+          </div>
         ) : (
-          events.map((event, idx) => (
-            <div
-              key={idx}
-              onClick={() => handleClick(event)}
-              className="bg-[#1e1e1e] cursor-pointer rounded-xl px-4 py-3 text-gray-200 border border-[#2a2a2a] hover:bg-[#272727] transition"
-            >
-              {event.display.length > 70
-                ? event.display.slice(0, 70) + "..."
-                : event.display}
-            </div>
+          events.map((event) => (
+           <div
+  key={event.id}
+  onClick={() => handleClick(event)}
+  className={`bg-[#1e1e1e] cursor-pointer rounded-xl px-4 py-2 text-gray-200 border border-[#2a2a2a] hover:bg-[#272727] 
+    transform transition-all duration-700 ease-out
+    ${hasLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
+  `}
+  style={{ maxWidth: "340px" }}
+>
+  <div className="text-sm font-medium truncate">{event.display}</div>
+  {event.subtext && (
+    <div
+      className={`text-xs ${
+        event.type === "task"
+          ? getPriorityColor(event.priority)
+          : "text-gray-400"
+      }`}
+    >
+      {event.subtext}
+    </div>
+  )}
+</div>
+
           ))
         )}
       </div>
 
       {expandedItem && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-5"
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-51 p-5"
           onClick={() => setExpandedItem(null)}
         >
           <div
             onClick={() => onNavigate("plans", { event: expandedItem })}
-            className="bg-[#1e1e1e] border border-gray-600 text-white rounded-2xl p-6 text-sm w-full max-w-sm cursor-pointer"
+            className="bg-[#1e1e1e] border border-gray-600 text-white rounded-2xl p-6 text-sm w-full max-w-xs cursor-pointer"
           >
-            <h3 className="text-base font-semibold mb-2">
-              {expandedItem.title}
-            </h3>
-            <p className="text-xs text-gray-400 mb-2">
- 
-              {expandedItem.date
-                ? moment(expandedItem.date).format("MMM D, YYYY - h:mm A")
-                : "No due date"}
-            </p>
-            <p className="text-gray-300">
-              {expandedItem.description || "No description available."}
-            </p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-400">Title</p>
+                <p className="text-sm font-medium text-white">{expandedItem.title}</p>
+              </div>
+              {expandedItem.date && (
+                <div>
+                  <p className="text-xs text-gray-400">Date & Time</p>
+                  <p className="text-sm text-white">
+                    {moment(expandedItem.date).format("MMM D, YYYY - hh:mm A")}
+                  </p>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 pt-2">Tap anywhere to go to planner screen and view more.</p>
+            </div>
           </div>
         </div>
       )}

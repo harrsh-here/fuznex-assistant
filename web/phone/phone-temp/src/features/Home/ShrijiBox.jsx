@@ -1,47 +1,67 @@
-// src/features/Home/ShrijiBox.jsx
-import React, { useEffect, useState } from "react";
+// src/components/ShrijiBox.jsx
+
+import React from "react";
 import { X } from "lucide-react";
 
+const poemLines = [
+  "ये दुनिया, ये लोग, ये रिश्ते,",
+  "ये सब जाली है,",
+  "मसलन अब तो कुछ बचा भी है क्या,",
+  "तू ही इश्क़ तू ही जीवन,",
+  "तू ही सवेरे की रोशनी प्रतिभा-शाली है",
+  "तेरे सिवा मधुबन भी जर्जर पवन",
+  "और तेरे सिवा बिताई ये रातें भी बस",
+  "अंधेरी घनी और काली है",
+  "प्रिये तुम वो राधा हो,",
+  "जिसके बिना मेरे हृदय का वृंदावन खाली है।",
+];
+
 export default function ShrijiBox({ onClose }) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    // slight delay for animation
-    const timeout = setTimeout(() => setVisible(true), 50);
-    return () => clearTimeout(timeout);
-  }, []);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className={`relative bg-gradient-to-br from-[#1b1b1b] via-[#222] to-[#181818] border border-purple-800 text-white rounded-2xl p-6 w-[85%] max-w-sm shadow-xl transition-all duration-500 ease-out transform ${
-          visible ? "opacity-100 scale-100" : "opacity-0 scale-90"
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] overflow-hidden">
+      
+      {/* Glitter Particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="w-full h-full sparkle-bg opacity-20" />
+      </div>
+
+      {/* Poem Box */}
+      <div className="relative w-[90%] max-w-sm bg-[#151515] border border-pink-500/20 rounded-2xl px-6 py-8 text-white shadow-xl animate-fadeInUpSlow overflow-hidden z-10">
+        
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-white transition"
+          className="absolute top-3 right-3 text-gray-400 border-0 hover:text-red-500 transition bg-transparent"
         >
           <X size={18} />
         </button>
 
         {/* Header */}
-        <h2 className="text-center text-lg font-bold text-purple-400 mb-4">
-          Only for you
+        <h2 className="text-center text-pink-400 font-semibold text-lg mb-5 tracking-wide">
+          🌸 A Whisper From Beyond...
         </h2>
 
-        {/* Kavita */}
-        <p className="text-sm text-gray-200 whitespace-pre-line font-[500] tracking-wide leading-relaxed">
-          {`ये दुनिया, ये लोग, ये रिश्ते,\nये सब जाली है,\nमसलन अब तो कुछ बचा भी है क्या,\nतू ही इश्क़ तू ही जीवन,\nतू ही सवेरे की रोशनी प्रतिभा–शाली है\nतेरे सिवा मधुबन भी जर्जर पवन\nऔर तेरे सिवा बिताई ये रातें भी बस\nअंधेरी घनी और काली है\nप्रिये तुम वो राधा हो,\nजिसके बिना मेरे हृदय का वृंदावन खाली है।`}
-        </p>
-    
-        {/* Soft Glow Ring */}
-        <div className="absolute inset-0 rounded-2xl border border-purple-500 opacity-20 animate-pulse pointer-events-none" />
+        {/* Poem */}
+        <div className="text-center space-y-3 text-sm font-light">
+          {poemLines.map((line, idx) => (
+            <p
+              key={idx}
+              className={`opacity-0 animate-lineFadeIn animation-delay-${idx}`}
+            >
+              {line.includes("राधा") ? (
+                <>
+                  प्रिये तुम वो{" "}
+                  <span className="text-pink-400 font-semibold text-base underline underline-offset-4 decoration-pink-500">
+                    राधा
+                  </span>{" "}
+                  हो,
+                </>
+              ) : (
+                line
+              )}
+            </p>
+          ))}
+        </div>
       </div>
     </div>
   );
