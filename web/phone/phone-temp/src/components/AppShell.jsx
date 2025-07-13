@@ -57,7 +57,7 @@ export default function AppShell({ activePath, onNavigate, children }) {
         {/* Floating Mic Button - Glassmorphic Style */}
        {/* Floating Mic Button - Enhanced Gradient Glow */}
 {/* Floating Mic Button - With Animated Listening Ring */}
-<div className="absolute left-1/2 transform -translate-x-1/2 -top-6 z-[50]">
+<div className="absolute top-[-27px] left-1/2 -ml-[48px] w-[96px] h-[24px]  z-10">
   <div className="relative flex items-center justify-center">
     
 
@@ -69,7 +69,7 @@ export default function AppShell({ activePath, onNavigate, children }) {
   onClick={handleMicClick}
   className="relative z-50 mt-[-7px] w-[4.0rem] h-[4.0rem] flex items-center justify-center rounded-full text-white shadow-lg border border-white/20 backdrop-blur-md transition-all duration-300 hover:scale-105 "
   style={{
-    background: "linear-gradient(330deg, #4f46e5, #7e22ce)", // purple → pink → indigo
+    background: "linear-gradient(330deg, #4f46e5 30%, #7e22ce 70%)",
     boxShadow: "0 0 55px 0px rgba(168, 85, 247, 0.5)", // glow
   }}
 >

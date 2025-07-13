@@ -1,11 +1,17 @@
-// tailwind.config.cjs
-module.exports = {
+// web/phone/phone-temp/tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+
+export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}"
   ],
   theme: {
     extend: {
+       padding: {
+      'safe-top': 'env(safe-area-inset-top)', // iOS notch-safe padding
+    },
+      
   animation: {
     'ping-slow': 'ping 2.5s ease-in-out infinite',
     'pop': 'pop 1.8s ease-in-out infinite',
@@ -28,8 +34,6 @@ module.exports = {
   },
 },
   },
-   plugins: [require("tailwind-scrollbar")],
-
-   
- 
+    plugins: [require("tailwind-scrollbar")],
+    
 };
