@@ -170,7 +170,7 @@ const [activeParams, setActiveParams] = useState(null);
   return (
     <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
       <div className="w-[375px] h-[812px] border-[14px] border-black rounded-[50px] shadow-2xl overflow-hidden relative bg-black">
-     <div className="absolute top-0 left-1/2 -ml-[48px] w-[96px] h-[24px] bg-black rounded-b-[20px] shadow-md z-10" />
+     <div className="absolute top-0 left-1/2 -ml-[48px] w-[96px] h-[24px] bg-black rounded-b-[20px] shadow-md z-70" />
 
 
 

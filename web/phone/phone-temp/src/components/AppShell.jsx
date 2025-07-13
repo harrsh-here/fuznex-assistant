@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { NotePencil, Microphone } from "phosphor-react";
 import MicOverlay from "./MicOverlay";
-
+// test
 
 const tabs = [
   { path: "home", icon: Home, label: "Home" },
@@ -57,7 +57,7 @@ export default function AppShell({ activePath, onNavigate, children }) {
         {/* Floating Mic Button - Glassmorphic Style */}
        {/* Floating Mic Button - Enhanced Gradient Glow */}
 {/* Floating Mic Button - With Animated Listening Ring */}
-<div className="absolute top-[-27px] left-1/2 -ml-[48px] w-[96px] h-[24px]  z-10">
+<div className="absolute top-[-27px] left-1/2 -ml-[48px] w-[96px] h-[24px]  z-60">
   <div className="relative flex items-center justify-center">
     
 

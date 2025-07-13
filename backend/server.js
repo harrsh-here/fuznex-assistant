@@ -12,6 +12,8 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const subtaskRoutes = require('./routes/subtaskRoutes');
 const googleAuthRoutes = require('./routes/googleAuth');
 const cookieParser = require('cookie-parser');
+const chatRoutes = require('./routes/chatRoutes');
+
 
 
 const app = express();
@@ -40,7 +42,7 @@ app.use('/api/subtasks', subtaskRoutes);
 app.use('/api/history', userHistoryRoutes);
 app.use('/api/auth', googleAuthRoutes);
 app.use(cookieParser());
-
+app.use('/api/chat', chatRoutes);
 
 
 // Default Route

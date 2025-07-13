@@ -1,21 +1,29 @@
 // ProfileScreen.jsx
-import React from "react";
+import React, { useMemo } from "react";
 import { Gear, Clock } from "phosphor-react";
 
 export default function ProfileScreen({
   user,
   onLogout,
   onEditProfile,
-  onNavigate, // ← required
+  onNavigate,
 }) {
   const { name, email, avatar_url } = user || {};
+
+  // 🎲 Choose random profile pic on first mount
+  const randomPfp = useMemo(() => {
+    const index = Math.floor(Math.random() * 11) + 1; // 1–11
+    return `/profile-pictures/pfp${index}.png`;
+  }, []);
+
+  const profileImage = avatar_url || randomPfp || "/profile-pictures/default-avatar.png";
 
   return (
     <div className="flex flex-col h-full px-5 py-6 pt-12 text-white">
       {/* User Info */}
       <div className="flex items-center gap-4 mb-2">
         <img
-          src={avatar_url || "/profile-pictures/default-avatar.png"}
+          src={profileImage}
           alt="Profile"
           className="w-16 h-16 rounded-full object-cover border border-gray-600"
         />
@@ -52,7 +60,7 @@ export default function ProfileScreen({
         </select>
       </div>
 
-      {/* 🔓 Interaction History - NOW WORKS AND NO BORDER */}
+      {/* 🔓 Interaction History */}
       <div className="mb-6">
         <button
           onClick={() => onNavigate?.("history")}

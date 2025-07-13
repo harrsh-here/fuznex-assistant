@@ -1,62 +1,21 @@
-import React, { useState, useEffect, useRef } from "react";
+// src/components/MicOverlay.jsx
+
+import React, { useState } from "react";
 import { Mic, Keyboard, X } from "lucide-react";
 import TypingInputBox from "./TypingInputBox";
-import MicSpeechCapture from "./MicSpeechCapture";
+import MicLiveTranscribe from "./MicLiveTranscribe";
 
 export default function MicOverlay({ onClose }) {
-  const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] = useState(true);
   const [transcript, setTranscript] = useState("");
   const [response, setResponse] = useState("");
   const [hasSent, setHasSent] = useState(false);
   const [textMode, setTextMode] = useState(false);
-  const [liveTranscript, setLiveTranscript] = useState("");
-
-  // 👂 Live speech recognition setup
-  const recognitionRef = useRef(null);
-
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
-
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map(result => result[0].transcript)
-        .join("");
-      setLiveTranscript(transcript);
-    };
-
-    recognition.onerror = (e) => {
-      console.error("Speech recognition error:", e);
-    };
-
-    recognitionRef.current = recognition;
-  }, []);
-  // 🔁 Start/stop speech recognition based on listening state
-  useEffect(() => {
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
-
-    if (isListening) {
-      recognition.start();
-    } else {
-      recognition.stop();
-    }
-
-    return () => {
-      recognition.stop();
-    };
-  }, [isListening]);
 
   const handleTranscript = (text) => {
     setIsListening(false);
-    const finalText = text || liveTranscript;
+    const finalText = text || "";
     setTranscript(finalText);
-    setLiveTranscript("");
     if (!finalText.trim()) return;
     setHasSent(true);
     setTimeout(() => setResponse(`You said: ${finalText}`), 500);
@@ -68,7 +27,6 @@ export default function MicOverlay({ onClose }) {
     setResponse("");
     setHasSent(false);
     setTextMode(false);
-    setLiveTranscript("");
   };
 
   const close = () => {
@@ -77,7 +35,7 @@ export default function MicOverlay({ onClose }) {
   };
 
   return (
-    <div className="absolute inset-0 bg-black/70 backdrop-blur-xl flex flex-col z-[60] px-4 pb-4 pt-[env(safe-area-inset-top)] text-white">
+    <div className="absolute inset-0 bg-black/70 backdrop-blur-xl flex flex-col z-62 px-4 pb-4 pt-[env(safe-area-inset-top)] text-white">
       {/* Close Button */}
       {!textMode && !hasSent && (
         <button
@@ -91,49 +49,43 @@ export default function MicOverlay({ onClose }) {
       {/* Voice Mode */}
       {!textMode && !hasSent && (
         <div className="flex flex-col flex-1 items-center justify-center space-y-6">
-     {/* Mic Button + Glow */}
-<div
-  onClick={() => setIsListening((v) => !v)}
-  className="relative flex items-center justify-center w-24 h-24 cursor-pointer"
->
-  {isListening && (
-    <>
-      <span className="absolute w-full h-full rounded-full border-2 border-purple-400 animate-ping opacity-100" />
-<div className="absolute w-full h-full rounded-full bg-[radial-gradient(ellipse_at_center,_rgba(216,180,254,0.5)_55%,_rgba(147,197,255,0.9)_70%,_rgba(251,113,133,0.9)_90%)] blur-2xl animate-pulse opacity-100" />
-
-
-
-    </>
-  )}
-  <div className="relative z-10 w-16 h-16 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-md transition-all duration-300 animate-pop">
-    <Mic
-      size={32}
-      className={isListening ? "text-white animate-pulse-glow" : "text-white"}
-    />
-  </div>
-</div>
-
+          {/* Mic Button + Glow */}
+          <div
+            onClick={() => setIsListening((v) => !v)}
+            className="relative flex items-center justify-center w-24 h-24 cursor-pointer"
+          >
+            {isListening && (
+              <>
+                <span className="absolute w-full h-full rounded-full border-2 border-purple-400 animate-ping opacity-100" />
+                <div className="absolute w-full h-full rounded-full bg-[radial-gradient(ellipse_at_center,_rgba(216,180,254,0.5)_55%,_rgba(147,197,255,0.9)_70%,_rgba(251,113,133,0.9)_90%)] blur-2xl animate-pulse opacity-100" />
+              </>
+            )}
+            <div className="relative z-63 w-16 h-16 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-md transition-all duration-300 animate-pop">
+              <Mic
+                size={32}
+                className={isListening ? "text-white animate-pulse-glow" : "text-white"}
+              />
+            </div>
+          </div>
 
           {/* Prompt + Transcript */}
-          <div className="flex flex-col items-center space-y-1">
+          <div className="flex flex-col items-center space-y-1 w-full">
             <h2 className="text-lg font-semibold text-indigo-200 text-center">
               {isListening ? "Recording…" : "Tap mic to speak"}
             </h2>
-            {liveTranscript && (
-              <p className="text-sm text-white/70 text-center max-w-xs px-4 break-words">
-                <span className="text-purple-400">Listening:</span> {liveTranscript}
-              </p>
-            )}
+
+            {/* Live transcription powered by Vosk */}
+            <MicLiveTranscribe
+              onResult={(text) => setTranscript(text)}
+              onStop={handleTranscript}
+            />
           </div>
 
-          <MicSpeechCapture
-            isListening={isListening}
-            onTranscript={handleTranscript}
-            showTranscript
-          />
-
           <button
-            onClick={() => { resetAll(); setTextMode(true); }}
+            onClick={() => {
+              resetAll();
+              setTextMode(true);
+            }}
             className="flex items-center text-sm text-white/80 hover:text-purple-300 transition"
           >
             <Keyboard size={16} className="mr-1" />

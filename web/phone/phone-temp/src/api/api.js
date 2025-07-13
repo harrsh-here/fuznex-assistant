@@ -16,7 +16,7 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
-
+//34741
 // Simple toggle helper for alarms
 api.toggleAlarm = (id) => api.put(`/alarms/${id}/toggle`);
 

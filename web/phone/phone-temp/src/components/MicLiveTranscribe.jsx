@@ -1,80 +1,104 @@
-// components/MicLiveTranscribe.jsx
+// src/components/MicLiveTranscribe.jsx
+
 import React, { useEffect, useRef, useState } from "react";
+import Vosk from "vosk-browser";
 
-export default function MicLiveTranscribe({ onTranscription }) {
-  const [isListening, setIsListening] = useState(false);
+
+export default function MicLiveTranscribe({ onResult, onStop }) {
   const [transcript, setTranscript] = useState("");
-  const recognitionRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const modelRef = useRef(null);
+  const recognizerRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const streamRef = useRef(null);
+  const processorRef = useRef(null);
 
+  // Load Vosk model once
   useEffect(() => {
-    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      alert("Your browser does not support Speech Recognition. Try Chrome.");
-      return;
-    }
-
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "hi-IN"; // Hindi, use "en-IN" for Hinglish or "en-US" for English
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onstart = () => {
-      setIsListening(true);
+    const loadModel = async () => {
+      const model = new Model(
+        "/models/vosk-model-small-en-us-0.15" // Relative to public/
+      );
+      await model.init();
+      modelRef.current = model;
+      setLoading(false);
     };
 
-    recognition.onend = () => {
-      setIsListening(false);
-    };
+    loadModel();
 
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      setIsListening(false);
+    return () => {
+      stopRecognition(); // clean up
     };
+  }, []);
 
-    recognition.onresult = (event) => {
-      let finalTranscript = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalTranscript += result[0].transcript + " ";
-        }
+  const startRecognition = async () => {
+    if (!modelRef.current) return;
+    const model = modelRef.current;
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    streamRef.current = stream;
+
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtxRef.current = audioContext;
+
+    const source = audioContext.createMediaStreamSource(stream);
+    const processor = audioContext.createScriptProcessor(4096, 1, 1);
+    processorRef.current = processor;
+
+    const recognizer = new KaldiRecognizer(model, 16000);
+    recognizer.setWords(true);
+    recognizerRef.current = recognizer;
+
+    processor.onaudioprocess = async (e) => {
+      const input = e.inputBuffer.getChannelData(0);
+      const result = recognizer.acceptWaveform(input);
+
+      if (result) {
+        const res = recognizer.result();
+        const text = res?.text || "";
+        setTranscript(text);
+        if (onResult) onResult(text);
+      } else {
+        const partial = recognizer.partialResult();
+        setTranscript(partial.partial);
       }
-      if (finalTranscript) {
-        setTranscript(finalTranscript);
-        onTranscription(finalTranscript.trim());
-      }
     };
 
-    recognitionRef.current = recognition;
-  }, [onTranscription]);
-
-  const startListening = () => {
-    if (recognitionRef.current && !isListening) {
-      recognitionRef.current.start();
-    }
+    source.connect(processor);
+    processor.connect(audioContext.destination);
   };
 
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+  const stopRecognition = () => {
+    if (processorRef.current) {
+      processorRef.current.disconnect();
     }
+
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close();
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+    }
+
+    const finalResult = recognizerRef.current?.finalResult()?.text || "";
+    if (onStop) onStop(finalResult);
   };
+
+  // Auto start on mount
+  useEffect(() => {
+    if (!loading) {
+      startRecognition();
+    }
+  }, [loading]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-2 p-4">
-      <button
-        onClick={isListening ? stopListening : startListening}
-        className={`px-4 py-2 rounded-full ${
-          isListening ? "bg-red-500" : "bg-blue-500"
-        } text-white font-semibold`}
-      >
-        {isListening ? "Stop" : "Start"} Listening
-      </button>
-      <div className="text-sm text-gray-700 max-w-xs text-center mt-2">
-        {transcript || "Say something..."}
-      </div>
+    <div className="text-white text-sm text-center px-4 py-2">
+      {loading ? (
+        <p className="text-gray-400 animate-pulse">Loading voice model...</p>
+      ) : (
+        <p className="animate-fadeInUpSlow">{transcript || "Listening..."}</p>
+      )}
     </div>
   );
 }
