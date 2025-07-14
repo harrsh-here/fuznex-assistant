@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import { Mic, Keyboard, X } from "lucide-react";
 import TypingInputBox from "./TypingInputBox";
 import MicLiveTranscribe from "./MicLiveTranscribe";
+import { uploadAudioAndTranscribe } from "../utils/uploadAudioAndTranscribe";
+import { useRef, useEffect } from "react";
+
 
 export default function MicOverlay({ onClose }) {
   const [isListening, setIsListening] = useState(true);
@@ -11,6 +14,36 @@ export default function MicOverlay({ onClose }) {
   const [response, setResponse] = useState("");
   const [hasSent, setHasSent] = useState(false);
   const [textMode, setTextMode] = useState(false);
+
+  const mediaRecorderRef = useRef(null);
+const [recordedChunks, setRecordedChunks] = useState([]);
+
+useEffect(() => {
+  if (isListening) {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      setRecordedChunks([]);
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setRecordedChunks((prev) => [...prev, event.data]);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(recordedChunks, { type: "audio/webm" });
+        const text = await uploadAudioAndTranscribe(blob);
+        handleTranscript(text);
+      };
+
+      mediaRecorder.start();
+    });
+  } else if (mediaRecorderRef.current) {
+    mediaRecorderRef.current.stop();
+  }
+}, [isListening]);
+
 
   const handleTranscript = (text) => {
     setIsListening(false);
@@ -75,10 +108,9 @@ export default function MicOverlay({ onClose }) {
             </h2>
 
             {/* Live transcription powered by Vosk */}
-            <MicLiveTranscribe
-              onResult={(text) => setTranscript(text)}
-              onStop={handleTranscript}
-            />
+          <p className="text-sm text-gray-300 mt-4">
+              {isListening ? "Listening..." : transcript || "Tap mic again to retry"}
+            </p>
           </div>
 
           <button

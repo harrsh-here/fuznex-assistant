@@ -5,7 +5,7 @@ import HomeScreen from "./features/Home/HomeScreen";
 import PlansScreen from "./features/Plans/PlansScreen";
 import FitnessScreen from "./features/Fitness/FitnessScreen";
 import HistoryScreen from "./features/History/HistoryScreen";
-import ChatScreen from "./features/Home/ChatScreen";
+import ChatScreen from "./features/Chats/ChatScreen";
 import NotificationsScreen from "./features/Notifications/NotificationsScreen";
 import ProfileScreen from "./features/Profile/ProfileScreen";
 import EditProfileScreen from "./features/Profile/EditProfileScreen";

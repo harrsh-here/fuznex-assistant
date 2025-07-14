@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "axios": "^1.10.0",
+    "classnames": "^2.5.1",
     "dayjs": "^1.11.13",
     "framer-motion": "^12.23.0",
     "lucide": "^0.522.0",
@@ -21,7 +22,9 @@
     "react": "^19.1.0",
     "react-datepicker": "^8.4.0",
     "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.6.2",
+    "remark-gfm": "^4.0.1",
     "router-dom": "^3.0.3",
     "tailwind-scrollbar": "^4.0.2",
     "vosk-browser": "^0.0.8"
