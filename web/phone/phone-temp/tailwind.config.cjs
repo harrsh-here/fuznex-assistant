@@ -17,6 +17,7 @@ export default {
     'pop': 'pop 1.8s ease-in-out infinite',
     'squeeze': 'squeeze 2.5s ease-in-out infinite',
     'expand': 'expand 0.3s ease-out forwards',
+    'spin-slow': 'spin 12s linear infinite',
   },
   keyframes: {
     pop: {

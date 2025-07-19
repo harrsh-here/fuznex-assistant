@@ -31,12 +31,12 @@ export default function AppShell({ activePath, onNavigate, children }) {
   return (
     <div className="flex flex-col h-full w-full bg-gradient-to-br from-[#0f0f0f] via-[#181818] to-[#0b0b0b] text-white relative overflow-hidden">
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto">{children}</div>
+      <div className="flex-1 overflow-y-auto ">{children}</div>
 
       {/* Bottom Navbar */}
       <div className="relative">
         {/* Bottom Nav Icons */}
-        <div className="grid grid-cols-5 items-center px-2 py-1.5 border-t border-[#2a2a2a] bg-[#0f0f0f] text-gray-400 z-60">
+        <div className="grid grid-cols-5 items-center px-2 py-1.5 border-t border-[#2a2a2a] bg-[#0f0f0f] text-gray-400 z-50">
           {tabs.map((tab, index) => (
             <div key={index} className="flex flex-col items-center justify-center">
               {tab.icon && (

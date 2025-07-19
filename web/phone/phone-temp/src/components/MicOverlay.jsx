@@ -1,12 +1,9 @@
 // src/components/MicOverlay.jsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Mic, Keyboard, X } from "lucide-react";
 import TypingInputBox from "./TypingInputBox";
-import MicLiveTranscribe from "./MicLiveTranscribe";
 import { uploadAudioAndTranscribe } from "../utils/uploadAudioAndTranscribe";
-import { useRef, useEffect } from "react";
-
 
 export default function MicOverlay({ onClose }) {
   const [isListening, setIsListening] = useState(true);
@@ -16,42 +13,66 @@ export default function MicOverlay({ onClose }) {
   const [textMode, setTextMode] = useState(false);
 
   const mediaRecorderRef = useRef(null);
-const [recordedChunks, setRecordedChunks] = useState([]);
+  const [recordedChunks, setRecordedChunks] = useState([]);
 
-useEffect(() => {
-  if (isListening) {
+  useEffect(() => {
+    if (!isListening) return;
+
+    console.log("🎙️ Starting mic...");
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm;codecs=opus",
+      });
+
       mediaRecorderRef.current = mediaRecorder;
-      setRecordedChunks([]);
+      const chunks = [];
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          setRecordedChunks((prev) => [...prev, event.data]);
+          chunks.push(event.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(recordedChunks, { type: "audio/webm" });
+        console.log("🛑 Recording stopped. Chunks:", chunks);
+        if (chunks.length === 0) {
+          console.warn("No audio recorded.");
+          return;
+        }
+
+        const blob = new Blob(chunks, { type: "audio/webm" });
         const text = await uploadAudioAndTranscribe(blob);
+        console.log("📄 Transcribed text:", text);
         handleTranscript(text);
+
+        // Stop audio stream
+        stream.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorder.start();
-    });
-  } else if (mediaRecorderRef.current) {
-    mediaRecorderRef.current.stop();
-  }
-}, [isListening]);
+      console.log("▶️ Recording...");
 
+      // Auto stop after 5s
+      setTimeout(() => {
+        mediaRecorder.stop();
+      }, 5000);
+    }).catch((err) => {
+      console.error("Mic permission denied or error:", err);
+      setIsListening(false);
+    });
+  }, [isListening]);
 
   const handleTranscript = (text) => {
+     console.log("📄 Final transcript received:", text);
     setIsListening(false);
     const finalText = text || "";
     setTranscript(finalText);
     if (!finalText.trim()) return;
     setHasSent(true);
-    setTimeout(() => setResponse(`You said: ${finalText}`), 500);
+
+    setTimeout(() => {
+      setResponse("Understood. How can I assist further?");
+    }, 800);
   };
 
   const resetAll = () => {
@@ -106,9 +127,7 @@ useEffect(() => {
             <h2 className="text-lg font-semibold text-indigo-200 text-center">
               {isListening ? "Recording…" : "Tap mic to speak"}
             </h2>
-
-            {/* Live transcription powered by Vosk */}
-          <p className="text-sm text-gray-300 mt-4">
+            <p className="text-sm text-gray-300 mt-4">
               {isListening ? "Listening..." : transcript || "Tap mic again to retry"}
             </p>
           </div>

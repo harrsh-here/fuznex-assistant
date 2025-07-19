@@ -1,39 +1,42 @@
 from fastapi import FastAPI, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import whisper
 import os
-import uuid
+
+app = FastAPI()
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# CORS (optional: allow frontend dev)
+# 👇 Add this after `app = FastAPI()`
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change in production!
+    allow_origins=["*"],  # Or ["http://localhost:5173"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load Whisper model once
-model = whisper.load_model("base")  # or "small", "medium", "large"
+model = whisper.load_model("base")  # or "small" / "medium"
 
 @app.post("/transcribe/")
 async def transcribe_audio(file: UploadFile = File(...)):
-    # Save the uploaded file temporarily
-    temp_filename = f"temp_{uuid.uuid4().hex}.mp3"
-    with open(temp_filename, "wb") as f:
-        content = await file.read()
-        f.write(content)
-
-    # Transcribe with Whisper
     try:
-        result = model.transcribe(temp_filename)
-        text = result["text"]
+        # ✅ Step 1: Save file temporarily
+        contents = await file.read()
+        temp_path = f"temp_{file.filename}"
+        with open(temp_path, "wb") as f:
+            f.write(contents)
+        print("🧠 File saved to:", temp_path)
+
+        # ✅ Step 2: Transcribe
+        result = model.transcribe(temp_path)
+        print("📝 Transcription result:", result)
+
+        # ✅ Step 3: Cleanup and return
+        os.remove(temp_path)
+        return {"text": result.get("text", "")}
+    
     except Exception as e:
-        text = f"Error during transcription: {str(e)}"
-
-    # Clean up
-    os.remove(temp_filename)
-
-    return {"transcript": text}
+        print("❌ Error in transcription:", str(e))
+        return JSONResponse(status_code=500, content={"error": str(e)})

@@ -50,7 +50,16 @@ const User = sequelize.define('user_details', {
   oauth_refresh_token: {
     type: DataTypes.STRING,
     allowNull: true,
-  }
+  },
+  /*resetToken: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+resetTokenExpires: {
+  type: DataTypes.DATE,
+  allowNull: true,
+}
+*/
 }, {
   tableName: 'user_details',
   timestamps: false,

@@ -17,6 +17,8 @@ export default {
     'pop': 'pop 1.8s ease-in-out infinite',
     'squeeze': 'squeeze 2.5s ease-in-out infinite',
     'expand': 'expand 0.3s ease-out forwards',
+    'spin-slow': 'spin 12s linear infinite',
+     'focusGrow': 'focusGrow 0.25s ease-out forwards',
   },
   keyframes: {
     pop: {
@@ -31,9 +33,17 @@ export default {
       '0%': { transform: 'scale(0.95)', opacity: 0 },
       '100%': { transform: 'scale(1)', opacity: 1 },
     },
+    focusGrow: {
+          '0%': { transform: 'scale(1)', boxShadow: 'none' },
+          '100%': {
+            transform: 'scale(1.03)',
+            boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.25)',
+          },
+        },
   },
 },
   },
-    plugins: [require("tailwind-scrollbar")],
+    plugins: [require("tailwind-scrollbar") [require('@tailwindcss/typography')],],
+    
     
 };

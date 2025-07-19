@@ -13,7 +13,9 @@ const subtaskRoutes = require('./routes/subtaskRoutes');
 const googleAuthRoutes = require('./routes/googleAuth');
 const cookieParser = require('cookie-parser');
 const chatRoutes = require('./routes/chatRoutes');
+const preferencesRoutes = require("./routes/preferencesRoutes");
 
+//const authRoutes = require('./routes/auth');    
 
 
 const app = express();
@@ -43,7 +45,9 @@ app.use('/api/history', userHistoryRoutes);
 app.use('/api/auth', googleAuthRoutes);
 app.use(cookieParser());
 app.use('/api/chat', chatRoutes);
+app.use("/api/preferences", preferencesRoutes);
 
+//app.use('/api/auth', authRoutes);
 
 // Default Route
 app.get('/', (req, res) => {

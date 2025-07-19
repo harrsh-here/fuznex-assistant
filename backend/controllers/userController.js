@@ -6,6 +6,7 @@ const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
 require('dotenv').config();
+const resend = require("../utils/resendClient"); // if using Resend for email
 
 // Generate JWT Token using id and role
 const generateToken = (user) => {
@@ -122,6 +123,7 @@ exports.createUser = async (req, res) => {
     const refreshToken = generateRefreshToken(newUser);
 
     res.status(201).json({ message: 'User created successfully', user: userData, token, refreshToken });
+   // await api.post("/auth/notify-signup", { email: user.email });
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -172,6 +174,8 @@ exports.loginUser = async (req, res) => {
     }
     // After task is successfully created
     try {
+     // await api.post("/auth/notify-login", { email: user.email });
+
 await Notification.create({
   user_id: user.user_id,
   
@@ -300,3 +304,64 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+/*
+exports.updateUserProfile = async (req, res) => {
+  const { name, email } = req.body; // ← both are accepted
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // ✅ Update Name
+    if (name) user.name = name;
+
+    // ✅ Update Email (if it's changed)
+    if (email && email !== user.email) {
+      user.email = email;
+
+      // (Optional) send notification
+      await resend.emails.send({
+        from: "FuzNex <noreply@fuznex.com>",
+        to: email,
+        subject: "Your email was updated",
+        html: `<p>If this wasn't you, please contact support immediately.</p>`,
+      });
+    }
+
+    await user.save();
+    res.json({ message: "Profile updated", user });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ error: "Update failed" });
+  }
+};
+
+
+exports.changeUserPassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findByPk(userId);
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(400).json({ error: "Current password is incorrect" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    // Notify user via Resend
+    await resend.emails.send({
+      from: "FuzNex <noreply@fuznex.com>",
+      to: user.email,
+      subject: "Password Changed Successfully",
+      html: `<p>Your password was changed. If this wasn't you, reset it immediately.</p>`,
+    });
+
+    res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Password change error:", err);
+    res.status(500).json({ error: "Password update failed" });
+  }
+};
+*/

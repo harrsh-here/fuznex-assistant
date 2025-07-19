@@ -4,7 +4,7 @@ import AppShell from "./components/AppShell";
 import HomeScreen from "./features/Home/HomeScreen";
 import PlansScreen from "./features/Plans/PlansScreen";
 import FitnessScreen from "./features/Fitness/FitnessScreen";
-import HistoryScreen from "./features/History/HistoryScreen";
+import HistoryScreen from "./features/History/HistoryScreen"; 
 import ChatScreen from "./features/Chats/ChatScreen";
 import NotificationsScreen from "./features/Notifications/NotificationsScreen";
 import ProfileScreen from "./features/Profile/ProfileScreen";
@@ -47,7 +47,7 @@ const [activeParams, setActiveParams] = useState(null);
       if (!refreshToken) return logoutImmediately();
 
       try {
-        const { data } = await api.post("/users/refresh", { refreshToken });
+        const { data } = await api.post("/users/refresh-token", { refreshToken });
         applyAccessToken(data.accessToken);
         const { data: userData } = await api.get("/users/profile");
         setUser(userData);
