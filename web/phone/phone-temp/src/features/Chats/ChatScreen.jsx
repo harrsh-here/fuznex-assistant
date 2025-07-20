@@ -902,14 +902,14 @@ const capitalized = assistantMap[msg.assistant?.toLowerCase()] || (
       boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
     }}
   >
-    {/* Mic Button */}
+    {/* Mic Button 
     <button
       className="p-2 hover:bg-white hover:bg-opacity-10 rounded-full flex items-center justify-center transition-colors"
       onClick={() => setIsListening(!isListening)}
     >
       <Mic className={`w-4 h-4 ${isListening ? 'text-red-400' : 'text-purple-400'}`} />
     </button>
-
+*/}
     {/* Text Input */}
     <textarea
       ref={inputRef}

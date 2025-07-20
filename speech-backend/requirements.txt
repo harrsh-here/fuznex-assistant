@@ -2,3 +2,6 @@ fastapi
 uvicorn
 whisper
 ffmpeg-python
+python-multipart
+openai-whisper
+pydub
