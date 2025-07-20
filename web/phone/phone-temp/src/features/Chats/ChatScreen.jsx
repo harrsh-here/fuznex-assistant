@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import  rehypeHighlight from "rehype-highlight";
 import { 
   Menu, 
   Send, 
@@ -129,12 +130,27 @@ const FuzNexChatScreen = () => {
   const messageListRef = useRef(null);
   const inputRef = useRef(null);
 
+const normalizeAssistantName = (name) => {
+  if (!name) return '';
+  const map = {
+    'groq': 'Groq',
+    'openai': 'OpenAI',
+    'nexmind': 'Nexmind (Beta)',
+    'togetherai': 'TogetherAI',
+    'together ai':'TogetherAI',
+    'gemini': 'Gemini'
+  };
+  return map[name.toLowerCase()] || name;
+};
+
+
   const assistants = [
     { name: 'Groq', icon: Zap, status: 'ready', color: 'text-purple-400' },
-    { name: 'OpenAI', icon: Brain, status: 'ready', color: 'text-green-400' },
-    { name: 'Nexmind (Beta)', icon: Atom, status: 'not-ready', color: 'text-gray-400' },
-    { name: 'Gemini', icon: Sparkles, status: 'not-ready', color: 'text-gray-400' },
-    { name: 'Together AI', icon: Users, status: 'not-ready', color: 'text-gray-400' }
+    { name: 'TogetherAI', icon: Users, status: 'ready', color: 'text-indigo-400' },
+    { name: 'OpenAI', icon: Brain, status: 'not-ready', color: 'text-green-400' },
+    { name: 'Nexmind (Beta)', icon: Atom, status: 'not-ready', color: 'text-blue-400' },
+    { name: 'Gemini', icon: Sparkles, status: 'not-ready', color: 'text-white-400' },
+    
   ];
 
   // Check backend connection on mount
@@ -405,12 +421,13 @@ const FuzNexChatScreen = () => {
     }
   }, [messages]);
 
-  const AssistantIcon = ({ assistant }) => {
-    const assistantData = assistants.find(a => a.name === assistant);
-    if (!assistantData) return null;
-    const Icon = assistantData.icon;
-    return <Icon className={`w-4 h-4 ${assistantData.color}`} />;
-  };
+ const AssistantIcon = ({ assistant }) => {
+  const displayName = normalizeAssistantName(assistant);
+  const assistantData = assistants.find(a => a.name === displayName);
+  if (!assistantData) return null;
+  const Icon = assistantData.icon;
+  return <Icon className={`w-4 h-4 ${assistantData.color}`} />;
+};
 
   return (
     <div
@@ -715,8 +732,20 @@ const FuzNexChatScreen = () => {
                 {msg.type === 'ai' && (
                   <div className="flex items-center space-x-2 mb-2 px-1">
                     {(() => {
-                        const capitalized =
-                          msg.assistant?.charAt(0).toUpperCase() + msg.assistant?.slice(1).toLowerCase();
+                       const assistantMap = {
+                          'together ai': 'TogetherAI',
+                          'togetherai': 'TogetherAI',
+                          'openai': 'OpenAI',
+                          'groq': 'Groq',
+                          'gemini': 'Gemini',
+                          'nexmind': 'Nexmind (Beta)'
+                        };
+
+const capitalized = assistantMap[msg.assistant?.toLowerCase()] || (
+  msg.assistant?.charAt(0).toUpperCase() + msg.assistant?.slice(1).toLowerCase()
+);
+
+                          
                         return (
                           <>
                             <AssistantIcon assistant={capitalized} />
@@ -739,40 +768,91 @@ const FuzNexChatScreen = () => {
                   boxShadow: msg.type === 'user' ? '0 4px 12px rgba(139, 92, 246, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
                 }}>
                 <ReactMarkdown
-    remarkPlugins={[remarkGfm]}
-    rehypePlugins={[rehypeRaw]}
-    components={{
-      p: ({ node, ...props }) => (
-        <p className="text-sm leading-relaxed text-gray-200  leading-[1.7]" {...props} />
-      ),
-      strong: ({ node, ...props }) => (
-        <strong className="font-bold text-white-400 leading-[2.7]" {...props} />
-      ),
-      em: ({ node, ...props }) => (
-        <em className="italic text-white-300 " {...props} />
-      ),
-      code: ({ node, ...props }) => (
-        <code className="bg-gray-800 px-1 py-0.5 rounded text-xs text-white-200 font-mono" {...props} />
-      ),
-      ul: ({ node, ...props }) => (
-        <ul className="list-disc ml-6 text-sm" {...props} />
-      ),
-      li: ({ node, ...props }) => (
-        <li className="mb-1" {...props} />
-      ),
-      h1: ({ node, ...props }) => (
-        <h1 className="text-2xl font-bold mt-2 mb-1 text-white-300" {...props} />
-      ),
-      h2: ({ node, ...props }) => (
-        <h2 className="text-lg font-semibold mt-1 mb-1 text-gray-100 " {...props} />
-      ),
-      a: ({ node, ...props }) => (
-        <a className="text-blue-400 underline" target="_blank" rel="noreferrer" {...props} />
-      ),
-    }}
-  >
-    {msg.content}
-  </ReactMarkdown>
+  remarkPlugins={[remarkGfm]}
+  rehypePlugins={[rehypeRaw, rehypeHighlight]}
+  components={{
+    p: ({ node, ...props }) => (
+      <p className="text-sm leading-relaxed text-gray-200 leading-[1.7]" {...props} />
+    ),
+    strong: ({ node, ...props }) => (
+      <strong className="font-bold text-white-400 leading-[2.7]" {...props} />
+    ),
+    em: ({ node, ...props }) => (
+      <em className="italic text-white-300" {...props} />
+    ),
+    a: ({ node, ...props }) => (
+      <a className="text-blue-400 underline" target="_blank" rel="noreferrer" {...props} />
+    ),
+    ul: ({ node, ...props }) => (
+      <ul className="list-disc ml-6 text-sm" {...props} />
+    ),
+    li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+    h1: ({ node, ...props }) => (
+      <h1 className="text-2xl font-bold mt-2 mb-1 text-white-300" {...props} />
+    ),
+    h2: ({ node, ...props }) => (
+      <h2 className="text-lg font-semibold mt-1 mb-1 text-gray-100" {...props} />
+    ),
+    pre: ({ node, ...props }) => (
+      <pre className="bg-zinc-900 text-white text-sm p-4 rounded-lg overflow-x-auto my-2 border border-zinc-700" {...props} />
+    ),
+     code: ({ node, inline, className, children, ...props }) => {
+          const codeRef = useRef(null);
+          const [copied, setCopied] = useState(false);
+
+          const handleCopy = () => {
+            if (codeRef.current) {
+              navigator.clipboard.writeText(codeRef.current.textContent || "");
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000); // hide after 2s
+            }
+          };
+
+          return !inline ? (
+            <div className="relative group">
+              <pre className="bg-zinc-900 text-white text-sm p-4 rounded-lg overflow-x-auto my-2 border border-zinc-700">
+                <code ref={codeRef} className={`hljs ${className || ""}`} {...props}>
+                  {children}
+                </code>
+              </pre>
+
+              <button
+                onClick={handleCopy}
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white bg-gray-700 px-2 py-1 rounded hover:bg-gray-600"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          ) : (
+            <code className="bg-gray-800 px-1 py-0.5 rounded text-xs text-white font-mono" {...props}>
+              {children}
+            </code>
+          );
+        },
+        
+    table: ({ node, ...props }) => (
+      <div className="overflow-auto my-2">
+        <table className="min-w-full border-collapse border border-gray-600 text-sm text-left text-gray-200" {...props} />
+      </div>
+    ),
+    thead: ({ node, ...props }) => (
+      <thead className="bg-gray-800 text-white font-semibold" {...props} />
+    ),
+    tbody: ({ node, ...props }) => <tbody {...props} />,
+    tr: ({ node, ...props }) => (
+      <tr className="border-t border-gray-600" {...props} />
+    ),
+    th: ({ node, ...props }) => (
+      <th className="px-3 py-2 border border-gray-600" {...props} />
+    ),
+    td: ({ node, ...props }) => (
+      <td className="px-3 py-2 border border-gray-700" {...props} />
+    ),
+  }}
+>
+  {msg.content}
+</ReactMarkdown>
+
 
 
                 </div>

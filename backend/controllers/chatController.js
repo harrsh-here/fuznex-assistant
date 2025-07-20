@@ -1,34 +1,34 @@
-
-
-// ===== Fixed Controller: controllers/chatController.js =====
+// ===== FINAL chatController.js with Together AI support =====
 const { Groq } = require("groq-sdk");
 const OpenAI = require("openai");
+const axios = require("axios"); // ⬅️ Needed for Together AI
 const { Op, fn, col } = require("sequelize");
 const ChatData = require("../models/ChatData");
-const { v4: uuidv4 } = require('uuid'); // You'll need to install uuid
+const { v4: uuidv4 } = require("uuid");
+const Together = require("together-ai");
+
+const together = new Together(); // Will use process.env.TOGETHER_API_KEY
+
+
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
+  apiKey: process.env.GROQ_API_KEY,
 });
 
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-/**
- * 🧠 Send message to AI assistant and save both user + AI messages
- */
 exports.sendMessage = async (req, res) => {
   const { content, messages = [], thread_id, assistant_model } = req.body;
-  const user_id = req.user?.id || 1; // Default user ID for demo
+  const user_id = req.user?.id || 1;
 
-  console.log('Received request:', { content, messages, thread_id, assistant_model });
+  console.log("Received request:", { content, messages, thread_id, assistant_model });
 
   if (!content?.trim() || !Array.isArray(messages) || !thread_id) {
     return res.status(400).json({ error: "Missing required fields." });
   }
 
-  // Format messages for AI API
   const formattedMessages = messages.map((msg) => ({
     role: msg.sender === "user" ? "user" : "assistant",
     content: msg.text || msg.content,
@@ -36,70 +36,88 @@ exports.sendMessage = async (req, res) => {
   formattedMessages.push({ role: "user", content: content.trim() });
 
   try {
-    const model = assistant_model?.toLowerCase() || "groq";
+    const modelKey = assistant_model?.toLowerCase() || "groq";
     let reply = "I'm thinking about your question...";
+    let modelDisplayName = assistant_model;
 
-    // Call AI service based on model
-    if (model === "groq") {
+    // === AI Provider logic ===
+    if (modelKey === "groq") {
+      modelDisplayName = "Groq";
       try {
         const response = await groq.chat.completions.create({
           messages: formattedMessages,
-          model: "llama3-8b-8192", // Updated to a working model
+          model: "llama3-8b-8192",
           temperature: 0.7,
           max_tokens: 1024,
         });
         reply = response.choices?.[0]?.message?.content?.trim() || reply;
-      } catch (groqError) {
-        console.error('Groq API Error:', groqError);
-        reply = "Sorry, I'm having trouble connecting to Groq. Please try again.";
+      } catch (err) {
+        console.error("Groq Error:", err);
+        reply = "Sorry, Groq is unavailable.";
       }
-
-    } else if (model === "openai") {
+    } else if (modelKey === "openai") {
+      modelDisplayName = "OpenAI";
       try {
         const response = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo", // Using a more available model
+          model: "gpt-3.5-turbo",
           messages: formattedMessages,
           temperature: 0.7,
           max_tokens: 1024,
         });
         reply = response.choices?.[0]?.message?.content?.trim() || reply;
-      } catch (openaiError) {
-        console.error('OpenAI API Error:', openaiError);
-        reply = "Sorry, I'm having trouble connecting to OpenAI. Please try again.";
+      } catch (err) {
+        console.error("OpenAI Error:", err);
+        reply = "Sorry, OpenAI is unavailable.";
+      }
+    } else if (modelKey === "togetherai") {
+      modelDisplayName = "TogetherAI";
+      try {
+       const response = await together.chat.completions.create({
+  messages: formattedMessages,
+  model: "meta-llama/Llama-3-70b-chat-hf", // or use "moonshotai/Kimi-K2-Instruct" if preferred
+  temperature: 0.7,
+  max_tokens: 1024,
+});
+reply = response.choices?.[0]?.message?.content?.trim() || reply;
+
+       
+      } catch (err) {
+        console.error("Together AI Error:", err);
+        reply = "Sorry, Together AI is unavailable.";
       }
     } else {
-      reply = `Hello! I'm your ${model} assistant. How can I help you today?`;
+      modelDisplayName = modelKey;
+      reply = `Hello! I'm your ${modelKey} assistant.`;
     }
 
-    // Save user message
+    // Save user and AI messages
     const userMessage = await ChatData.create({
       user_id,
       thread_id,
       sender: "user",
-      assistant_model: model,
+      assistant_model: modelDisplayName,
       message: content.trim(),
       encrypted_content: content.trim(),
       content: content.trim(),
       is_encrypted: false,
     });
 
-    // Save AI reply
     const aiMessage = await ChatData.create({
       user_id,
       thread_id,
       sender: "ai",
-      assistant_model: model,
+      assistant_model: modelDisplayName,
       message: reply,
       encrypted_content: reply,
       content: reply,
       is_encrypted: false,
     });
 
-    // Set thread title if not yet set (use first user message)
+    // Save thread title if not already set
     const hasTitle = await ChatData.findOne({
       where: { user_id, thread_id, thread_title: { [Op.ne]: null } },
     });
-    
+
     if (!hasTitle) {
       const threadTitle = content.length > 50 ? content.slice(0, 47) + "..." : content;
       await ChatData.update(
@@ -108,27 +126,17 @@ exports.sendMessage = async (req, res) => {
       );
     }
 
-    res.json({ 
-      reply,
-      user_message: userMessage,
-      ai_message: aiMessage
-    });
-
+    res.json({ reply, user_message: userMessage, ai_message: aiMessage });
   } catch (err) {
     console.error("❌ AI Error:", err.message);
-    res.status(500).json({ 
-      error: "Assistant failed to respond.", 
-      detail: err.message 
-    });
+    res.status(500).json({ error: "Assistant failed to respond.", detail: err.message });
   }
 };
 
-/**
- * 🧵 Create a new thread
- */
+// Create new thread with first AI response
 exports.createThread = async (req, res) => {
   const { initialMessage, assistantName } = req.body;
-  const user_id = req.user?.id || 1; // Default user ID for demo
+  const user_id = req.user?.id || 1;
 
   if (!initialMessage?.trim() || !assistantName) {
     return res.status(400).json({ error: "Missing required fields." });
@@ -136,25 +144,12 @@ exports.createThread = async (req, res) => {
 
   try {
     const thread_id = uuidv4();
-    const model = assistantName.toLowerCase();
-    
-    // Create initial user message
-    const userMessage = await ChatData.create({
-      user_id,
-      thread_id,
-      sender: "user",
-      assistant_model: model,
-      message: initialMessage.trim(),
-      encrypted_content: initialMessage.trim(),
-      content: initialMessage.trim(),
-      thread_title: initialMessage.length > 50 ? initialMessage.slice(0, 47) + "..." : initialMessage,
-      is_encrypted: false,
-    });
+    const modelKey = assistantName.toLowerCase();
+    let modelDisplayName = assistantName;
+    let reply = `Hello! I'm your ${assistantName} assistant.`;
 
-    // Generate AI response
-    let reply = `Hello! I'm your ${assistantName} assistant. How can I help you today?`;
-    
-    if (model === "groq" && process.env.GROQ_API_KEY) {
+    if (modelKey === "groq") {
+      modelDisplayName = "Groq";
       try {
         const response = await groq.chat.completions.create({
           messages: [{ role: "user", content: initialMessage.trim() }],
@@ -163,10 +158,11 @@ exports.createThread = async (req, res) => {
           max_tokens: 1024,
         });
         reply = response.choices?.[0]?.message?.content?.trim() || reply;
-      } catch (error) {
-        console.error('Groq API Error:', error);
+      } catch (err) {
+        console.error("Groq error:", err);
       }
-    } else if (model === "openai" && process.env.OPENAI_API_KEY) {
+    } else if (modelKey === "openai") {
+      modelDisplayName = "OpenAI";
       try {
         const response = await openai.chat.completions.create({
           model: "gpt-3.5-turbo",
@@ -175,48 +171,68 @@ exports.createThread = async (req, res) => {
           max_tokens: 1024,
         });
         reply = response.choices?.[0]?.message?.content?.trim() || reply;
-      } catch (error) {
-        console.error('OpenAI API Error:', error);
+      } catch (err) {
+        console.error("OpenAI error:", err);
+      }
+    } else if (modelKey === "togetherai") {
+      modelDisplayName = "TogetherAI";
+      try {
+       const response = await together.chat.completions.create({
+  messages: [{ role: "user", content: initialMessage.trim() }],
+  model: "meta-llama/Llama-3-70b-chat-hf", // or use "moonshotai/Kimi-K2-Instruct" if preferred
+  temperature: 0.7,
+  max_tokens: 1024,
+});
+
+         reply = response.choices?.[0]?.message?.content?.trim() || reply;
+      } catch (err) {
+        console.error("TogetherAI error:", err);
       }
     }
 
-    // Create AI response
+    // Save both messages
+    const title = initialMessage.length > 50 ? initialMessage.slice(0, 47) + "..." : initialMessage;
+
+    await ChatData.create({
+      user_id,
+      thread_id,
+      sender: "user",
+      assistant_model: modelDisplayName,
+      message: initialMessage.trim(),
+      encrypted_content: initialMessage.trim(),
+      content: initialMessage.trim(),
+      thread_title: title,
+      is_encrypted: false,
+    });
+
     await ChatData.create({
       user_id,
       thread_id,
       sender: "ai",
-      assistant_model: model,
+      assistant_model: modelDisplayName,
       message: reply,
       encrypted_content: reply,
       content: reply,
-      thread_title: initialMessage.length > 50 ? initialMessage.slice(0, 47) + "..." : initialMessage,
+      thread_title: title,
       is_encrypted: false,
     });
 
-    // Return thread info
-    const thread = {
-      id: thread_id,
-      thread_id,
-      title: userMessage.thread_title,
-      assistant_used: model,
-      lastMessage: initialMessage.slice(0, 50) + (initialMessage.length > 50 ? '...' : ''),
-      timestamp: new Date()
-    };
-
-    res.json({ 
-      thread,
-      message: "Thread created successfully"
+    res.json({
+      thread: {
+        id: thread_id,
+        thread_id,
+        title,
+        assistant_used: modelDisplayName,
+        lastMessage: initialMessage.slice(0, 50) + (initialMessage.length > 50 ? "..." : ""),
+        timestamp: new Date(),
+      },
+      message: "Thread created successfully",
     });
-
   } catch (err) {
-    console.error("❌ Thread Creation Error:", err.message);
-    res.status(500).json({ 
-      error: "Failed to create thread.", 
-      detail: err.message 
-    });
+    console.error("Thread creation error:", err.message);
+    res.status(500).json({ error: "Failed to create thread.", detail: err.message });
   }
 };
-
 /**
  * 📜 Get all messages in a thread
  */
