@@ -7,9 +7,6 @@ app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
 
 # 👇 Add this after `app = FastAPI()`
 app.add_middleware(
@@ -20,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = whisper.load_model("base")  # or "small" / "medium"
+model = whisper.load_model("small")  # or "small" / "medium"
 
 @app.post("/transcribe/")
 async def transcribe_audio(file: UploadFile = File(...)):
@@ -30,7 +27,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
         temp_path = f"temp_{file.filename}"
         with open(temp_path, "wb") as f:
             f.write(contents)
-        #print("🧠 File saved to:", temp_path)
+       # print("🧠 File saved to:", temp_path)
 
         # ✅ Step 2: Transcribe
         result = model.transcribe(temp_path)
@@ -38,8 +35,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
 
         # ✅ Step 3: Cleanup and return
         os.remove(temp_path)
-        return {"text": result.get("text", "")}
+       # return {"text": result.get("text", "")}
     
     except Exception as e:
-       # print("❌ Error in transcription:", str(e))
+        print("❌ Error in transcription:", str(e))
         return JSONResponse(status_code=500, content={"error": str(e)})

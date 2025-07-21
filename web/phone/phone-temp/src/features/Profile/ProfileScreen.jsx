@@ -80,7 +80,7 @@ export default function ProfileScreen({
         </div>
         <div>
           <div className="text-sm font-semibold mb-1">App Info</div>
-          <div className="text-xs text-gray-400">Version 0.1.2 MVP</div>
+          <div className="text-xs text-gray-400">Version 1.0.0 MVP</div>
         
         </div>
       </div>

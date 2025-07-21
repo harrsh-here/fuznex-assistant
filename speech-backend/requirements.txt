@@ -5,3 +5,4 @@ ffmpeg-python
 python-multipart
 openai-whisper
 pydub
+torch
