@@ -280,8 +280,11 @@ export default function MicOverlay({ onClose }) {
               {isListening ? "Recording…" : "Tap mic to start speaking"}
             </h2>
             <p className="text-sm text-gray-300 mt-4">
-              {isListening ? "Listening... (WAV format)" : transcript || "Waiting for input..."}
+              {isListening ? "Listening..." : transcript || "Waiting for input..."}
             </p>
+              <p className="text-xs text-gray-400 mt-4">
+                 Tap MIC to Start and Stop Recording!
+              </p>
           </div>
 
           <button
