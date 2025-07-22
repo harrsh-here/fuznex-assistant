@@ -18,6 +18,8 @@ app.add_middleware(
 )
 
 model = whisper.load_model("tiny")  # or "small" / "medium"
+model_dir = model.model_path  # this gives the path to the downloaded model file 
+print(f"Model downloaded to: {model_dir}")
 
 @app.post("/transcribe/")
 async def transcribe_audio(file: UploadFile = File(...)):

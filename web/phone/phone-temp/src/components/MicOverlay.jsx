@@ -6,6 +6,42 @@ import TypingInputBox from "./TypingInputBox";
 import { uploadAudioAndTranscribe } from "../utils/uploadAudioAndTranscribe";
 import { abortUpload } from "@/utils/uploadAudioAndTranscribe";
 
+// WAV encoder utility function
+const encodeWAV = (samples, sampleRate = 44100) => {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  
+  // WAV header
+  const writeString = (offset, string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+  
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+  
+  // Convert float samples to 16-bit PCM
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++) {
+    const sample = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+    offset += 2;
+  }
+  
+  return buffer;
+};
 
 export default function MicOverlay({ onClose }) {
   const [isListening, setIsListening] = useState(false);
@@ -17,19 +53,54 @@ export default function MicOverlay({ onClose }) {
 
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
-  const [recordedChunks, setRecordedChunks] = useState([]);
+  const audioContextRef = useRef(null);
+  const processorRef = useRef(null);
+  const recordedSamplesRef = useRef([]);
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 44100,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        } 
+      });
       streamRef.current = stream;
 
+      // Initialize Web Audio API for WAV processing
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({
+        sampleRate: 44100
+      });
+      
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      
+      // Create ScriptProcessorNode for audio processing
+      processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      recordedSamplesRef.current = [];
+      
+      processorRef.current.onaudioprocess = (event) => {
+        const inputBuffer = event.inputBuffer;
+        const inputData = inputBuffer.getChannelData(0);
+        
+        // Copy samples to our recording buffer
+        const samples = new Float32Array(inputData.length);
+        samples.set(inputData);
+        recordedSamplesRef.current.push(samples);
+      };
+      
+      source.connect(processorRef.current);
+      processorRef.current.connect(audioContextRef.current.destination);
+
+      // Fallback MediaRecorder for browsers that don't support ScriptProcessorNode well
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm;codecs=opus",
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") 
+          ? "audio/webm;codecs=opus" 
+          : "audio/webm"
       });
 
       const chunks = [];
-
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -39,27 +110,63 @@ export default function MicOverlay({ onClose }) {
       };
 
       mediaRecorder.onstop = async () => {
-        console.log("🛑 Recording stopped. Chunks:", chunks);
-        if (chunks.length === 0) return;
-
+        console.log("🛑 Recording stopped.");
         setIsProcessing(true);
 
-        const blob = new Blob(chunks, { type: "audio/webm" });
+        let audioBlob;
+
+        // Try to create WAV from Web Audio API samples first
+        if (recordedSamplesRef.current.length > 0) {
+          try {
+            // Combine all sample chunks
+            const totalLength = recordedSamplesRef.current.reduce((acc, chunk) => acc + chunk.length, 0);
+            const combinedSamples = new Float32Array(totalLength);
+            
+            let offset = 0;
+            recordedSamplesRef.current.forEach(chunk => {
+              combinedSamples.set(chunk, offset);
+              offset += chunk.length;
+            });
+
+            // Encode to WAV
+            const wavBuffer = encodeWAV(combinedSamples, 44100);
+            audioBlob = new Blob([wavBuffer], { type: "audio/wav" });
+            console.log("✅ Created WAV from Web Audio API samples");
+          } catch (error) {
+            console.warn("⚠️ WAV encoding failed, falling back to MediaRecorder:", error);
+            audioBlob = chunks.length > 0 ? new Blob(chunks, { type: "audio/webm" }) : null;
+          }
+        } else {
+          // Fallback to MediaRecorder blob
+          audioBlob = chunks.length > 0 ? new Blob(chunks, { type: "audio/webm" }) : null;
+        }
+
+        if (!audioBlob) {
+          console.error("❌ No audio data recorded");
+          setIsProcessing(false);
+          return;
+        }
 
         try {
-          const text = await uploadAudioAndTranscribe(blob);
+          console.log(`📤 Uploading ${audioBlob.type} audio (${audioBlob.size} bytes)`);
+          const text = await uploadAudioAndTranscribe(audioBlob);
           console.log("📄 Transcribed text:", text);
           handleTranscript(text);
         } catch (error) {
           console.error("Transcription error:", error);
+          setIsProcessing(false);
         }
 
+        // Cleanup
         stream.getTracks().forEach((track) => track.stop());
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+        }
       };
 
       mediaRecorder.start();
       setIsListening(true);
-      console.log("▶️ Recording...");
+      console.log("▶️ Recording in WAV format...");
     } catch (err) {
       console.error("Mic error:", err);
       setIsListening(false);
@@ -67,7 +174,14 @@ export default function MicOverlay({ onClose }) {
   };
 
   const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+    
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+    }
+    
     setIsListening(false);
   };
 
@@ -78,7 +192,7 @@ export default function MicOverlay({ onClose }) {
   const cancelProcessing = () => {
     setIsProcessing(false);
     setTranscript("");
-    setRecordedChunks([]);
+    recordedSamplesRef.current = [];
     startRecording();
     abortUpload();
   };
@@ -102,12 +216,30 @@ export default function MicOverlay({ onClose }) {
     setResponse("");
     setHasSent(false);
     setTextMode(false);
+    recordedSamplesRef.current = [];
+    
+    // Cleanup audio resources
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close();
+    }
   };
 
   const close = () => {
     resetAll();
     onClose();
   };
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
 
   return (
     <div className="absolute inset-0 bg-black/70 backdrop-blur-xl flex flex-col z-65 px-4 pb-4 pt-[env(safe-area-inset-top)] text-white">
@@ -148,7 +280,7 @@ export default function MicOverlay({ onClose }) {
               {isListening ? "Recording…" : "Tap mic to start speaking"}
             </h2>
             <p className="text-sm text-gray-300 mt-4">
-              {isListening ? "Listening..." : transcript || "Waiting for input..."}
+              {isListening ? "Listening... (WAV format)" : transcript || "Waiting for input..."}
             </p>
           </div>
 

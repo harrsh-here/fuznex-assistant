@@ -57,21 +57,17 @@ focus:scale-[1.03] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.2)] focus:z-10`;
   };
 
   return (
-
-     
-    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(168,85,247,0.01)_90%,_rgba(128,90,213,0.07)_99%,_transparent_90%)]   flex items-center justify-center font-sans px-4 py-8">
-     
- <div className="absolute bottom-0 w-full h-2 bg-gradient-to-r from-transparent via-purple-600 to-transparent" />
- <div className="absolute inset-0 z-0 bg-[linear-gradient(to_bottom,_rgba(255,255,255,0.03)_0%,_rgba(128,90,213,0.1)_40%,_transparent_100%)]" />
-     <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl bg-white/10 backdrop-blur-xl 
-rounded-3xl p-6 space-y-3 shadow-2xl border border-violet-500/20 transition-all duration-500">
+    <div className="min-h-screen w-full bg-[radial-gradient(ellipse_at_center,_rgba(168,85,247,0.01)_90%,_rgba(128,90,213,0.07)_99%,_transparent_90%)] flex items-center justify-center font-sans px-4 py-8 relative overflow-hidden">
+      
+      {/* Background decorative elements */}
+      <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-transparent via-purple-600 to-transparent" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_rgba(255,255,255,0.03)_0%,_rgba(128,90,213,0.1)_40%,_transparent_100%)]" />
+      
+      {/* Main card container */}
+      <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl bg-white/10 backdrop-blur-xl 
+rounded-3xl p-6 space-y-3 shadow-2xl border border-violet-500/20 transition-all duration-500 z-10 bottom-10" >
           
-        {/* ✅ Decorative Gradient Border Outline */}
-        <div className="absolute inset-0 rounded-3xl border-2 border-transparent z-[-1] pointer-events-none" style={{
-          maskImage: "linear-gradient(#fff 0 0)", WebkitMaskImage: "linear-gradient(#fff 0 0)"
-        }} />
-
-        {/* ✅ Notch */}
+        {/* Notch */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-1 bg-purple-500 rounded-b-md" />
 
         {/* Header */}
@@ -185,6 +181,5 @@ rounded-3xl p-6 space-y-3 shadow-2xl border border-violet-500/20 transition-all 
         </div>
       </div>
     </div>
-   
   );
 }

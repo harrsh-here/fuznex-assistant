@@ -16,10 +16,8 @@ export default function MicLiveTranscribe({ onResult, onStop }) {
   // Load Vosk model once
   useEffect(() => {
     const loadModel = async () => {
-      const model = new Model(
-        "/models/vosk-model-small-en-us-0.15" // Relative to public/
-      );
-      await model.init();
+      const model = await Vosk.createModel("/models/vosk-model-small-en-us-0.15");
+        
       modelRef.current = model;
       setLoading(false);
     };

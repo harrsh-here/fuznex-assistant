@@ -14,10 +14,10 @@ export async function uploadAudioAndTranscribe(audioBlob) {
   const signal = controller.signal;
 
   const formData = new FormData();
-  formData.append("file", audioBlob, "audio.webm");
+  formData.append("file", audioBlob, "audio.wav");
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/transcribe/", {
+    const res = await fetch("https://fuznex-speech-to-text.hf.space/transcribe/", {
       method: "POST",
       body: formData,
       signal,
