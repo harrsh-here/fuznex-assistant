@@ -1,0 +1,1 @@
+{"text": " Hi, this is Harsha. Hi.", "segments": [{"id": 0, "seek": 0, "start": 0.0, "end": 2.0, "text": " Hi, this is Harsha. Hi.", "tokens": [50365, 2421, 11, 341, 307, 389, 685, 1641, 13, 2421, 13, 50465], "temperature": 0.0, "avg_logprob": -0.6269051478459284, "compression_ratio": 0.7931034482758621, "no_speech_prob": 6.527674234479974e-11}], "language": "en"}

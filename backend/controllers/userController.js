@@ -1,7 +1,12 @@
 const User = require('../models/User');
+const UserHistory = require('../models/UserHistory'); // if not already imported
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
 require('dotenv').config();
+const resend = require("../utils/resendClient"); // if using Resend for email
 
 // Generate JWT Token using id and role
 const generateToken = (user) => {
@@ -27,14 +32,23 @@ exports.refreshToken = (req, res) => {
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token is required.' });
   }
-  
+
   jwt.verify(refreshToken, process.env.REFRESH_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid refresh token.' });
     }
-    
-    
-    
+
+    // Generate new access token using user data from decoded refresh token
+    const newAccessToken = jwt.sign(
+      {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
     res.json({ accessToken: newAccessToken });
   });
 };
@@ -109,6 +123,7 @@ exports.createUser = async (req, res) => {
     const refreshToken = generateRefreshToken(newUser);
 
     res.status(201).json({ message: 'User created successfully', user: userData, token, refreshToken });
+   // await api.post("/auth/notify-signup", { email: user.email });
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -120,33 +135,68 @@ exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate input
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
+    // Find user by email
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check password
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Incorrect password' });
     }
 
-    // Remove password from response
+    // Prepare user data for response
     const userData = user.toJSON();
     delete userData.password;
 
-    // Generate JWT token and Refresh Token
+    // Generate tokens
     const token = generateToken(user);
     const refreshToken = generateRefreshToken(user);
-    
-    res.json({ message: 'Login successful', user: userData, token, refreshToken });
+
+    // Log login event in UserHistory (non-blocking)
+    try {
+      await UserHistory.create({
+        user_id: user.user_id, // ✅ Correct field
+        assistant_name: "N/A",
+        interaction: "User logged in",
+        type: "system",
+      });
+    } catch (historyError) {
+      console.error("Failed to log UserHistory:", historyError);
+      // Don't block login if history logging fails
+    }
+    // After task is successfully created
+    try {
+     // await api.post("/auth/notify-login", { email: user.email });
+
+await Notification.create({
+  user_id: user.user_id,
+  
+  title: "User logged in",
+  message: "This id is logged in on a device"
+});
+}catch (notifi_error) {
+      console.error("Failed to log Notification:", notifi_error);
+     
+    }
+    // Send response
+    return res.json({
+      message: 'Login successful',
+      user: userData,
+      token,
+      refreshToken,
+    });
+
   } catch (error) {
     console.error('Error logging in:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
@@ -254,3 +304,64 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+/*
+exports.updateUserProfile = async (req, res) => {
+  const { name, email } = req.body; // ← both are accepted
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // ✅ Update Name
+    if (name) user.name = name;
+
+    // ✅ Update Email (if it's changed)
+    if (email && email !== user.email) {
+      user.email = email;
+
+      // (Optional) send notification
+      await resend.emails.send({
+        from: "FuzNex <noreply@fuznex.com>",
+        to: email,
+        subject: "Your email was updated",
+        html: `<p>If this wasn't you, please contact support immediately.</p>`,
+      });
+    }
+
+    await user.save();
+    res.json({ message: "Profile updated", user });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ error: "Update failed" });
+  }
+};
+
+
+exports.changeUserPassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findByPk(userId);
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(400).json({ error: "Current password is incorrect" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    // Notify user via Resend
+    await resend.emails.send({
+      from: "FuzNex <noreply@fuznex.com>",
+      to: user.email,
+      subject: "Password Changed Successfully",
+      html: `<p>Your password was changed. If this wasn't you, reset it immediately.</p>`,
+    });
+
+    res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error("Password change error:", err);
+    res.status(500).json({ error: "Password update failed" });
+  }
+};
+*/

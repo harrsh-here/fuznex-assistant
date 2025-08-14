@@ -1,74 +1,102 @@
-const Notification = require('../models/Notifications');
-const TodoTask = require('../models/TodoTask');
+// controllers/notificationController.js
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
 
-// Create a new notification (Only for user's task)
-exports.createNotification = async (req, res) => {
+
+// GET /notifications - Fetch all notifications for current user
+exports.getNotifications = async (req, res) => {
   try {
-    const { task_id, reminder_time } = req.body;
     const userId = req.user.id;
 
-    const task = await TodoTask.findOne({ where: { task_id, user_id: userId } });
-    if (!task) return res.status(403).json({ error: 'Access denied. Task does not belong to you.' });
+    const notifications = await Notification.findAll({
+      where: { user_id: userId },
+      order: [["reminder_time", "DESC"]],
+    });
 
-    const notification = await Notification.create({ task_id, reminder_time });
-    res.status(201).json({ message: 'Notification created', notification });
+    res.status(200).json(notifications);
   } catch (err) {
-    console.error('createNotification error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching notifications:", err);
+    res.status(500).json({ error: "Failed to fetch notifications" });
   }
 };
 
-// Get all your notifications
-exports.getAllNotifications = async (req, res) => {
+// PUT /notifications/:id/read - Mark one notification as read
+exports.markAsRead = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const tasks = await TodoTask.findAll({ where: { user_id: userId }, attributes: ['task_id'] });
-    const taskIds = tasks.map(t => t.task_id);
-
-    const notifications = await Notification.findAll({ where: { task_id: taskIds } });
-    res.json(notifications);
-  } catch (err) {
-    console.error('getAllNotifications error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-// Update notification (only if the task belongs to user)
-exports.updateNotification = async (req, res) => {
-  try {
-    const userId = req.user.id;
     const { id } = req.params;
+    const userId = req.user.id;
 
-    const notification = await Notification.findByPk(id);
-    if (!notification) return res.status(404).json({ error: 'Notification not found' });
+    const notification = await Notification.findOne({
+      where: { notification_id: id, user_id: userId },
+    });
 
-    const task = await TodoTask.findOne({ where: { task_id: notification.task_id, user_id: userId } });
-    if (!task) return res.status(403).json({ error: 'Access denied.' });
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
 
-    await notification.update(req.body);
-    res.json({ message: 'Notification updated', notification });
+    notification.is_read = true;
+    notification.status = "read";
+    await notification.save();
+
+    res.status(200).json({ message: "Notification marked as read" });
   } catch (err) {
-    console.error('updateNotification error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error marking as read:", err);
+    res.status(500).json({ error: "Failed to mark as read" });
   }
 };
 
-// Delete notification (only if task belongs to user)
+// DELETE /notifications/:id - Delete a notification
 exports.deleteNotification = async (req, res) => {
   try {
-    const userId = req.user.id;
     const { id } = req.params;
+    const userId = req.user.id;
 
-    const notification = await Notification.findByPk(id);
-    if (!notification) return res.status(404).json({ error: 'Notification not found' });
+    const deleted = await Notification.destroy({
+      where: { notification_id: id, user_id: userId },
+    });
 
-    const task = await TodoTask.findOne({ where: { task_id: notification.task_id, user_id: userId } });
-    if (!task) return res.status(403).json({ error: 'Access denied.' });
+    if (!deleted) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
 
-    await notification.destroy();
-    res.status(204).send();
+    res.status(200).json({ message: "Notification deleted" });
   } catch (err) {
-    console.error('deleteNotification error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error deleting notification:", err);
+    res.status(500).json({ error: "Failed to delete notification" });
+  }
+};
+
+// POST /notifications - Create a new notification (optional admin/testing use)
+exports.createNotification = async (req, res) => {
+  try {
+    const {
+      task_id,
+      subtask_id,
+      alarm_id,
+      device_id,
+      title,
+      message,
+      reminder_time,
+      is_important,
+    } = req.body;
+
+    const newNotification = await Notification.create({
+      user_id: req.user.id,
+      task_id,
+      subtask_id,
+      alarm_id,
+      device_id,
+      title,
+      message,
+      reminder_time,
+      is_important: is_important || false,
+      status: "pending",
+    });
+
+    res.status(201).json(newNotification);
+  } catch (err) {
+    console.error("Error creating notification:", err);
+    res.status(500).json({ error: "Failed to create notification" });
   }
 };

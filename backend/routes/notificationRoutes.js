@@ -1,12 +1,25 @@
-const express = require('express');
+// routes/notificationRoutes.js
+const express = require("express");
 const router = express.Router();
-const notificationController = require('../controllers/notificationController');
-const auth = require('../middleware/authMiddleware');
+const auth = require("../middleware/authMiddleware");
 
-// All routes are protected
-router.post('/', auth, notificationController.createNotification);
-router.get('/', auth, notificationController.getAllNotifications);
-router.put('/:id', auth, notificationController.updateNotification);
-router.delete('/:id', auth, notificationController.deleteNotification);
+const {
+  getNotifications,
+  markAsRead,
+  deleteNotification,
+  createNotification,
+} = require("../controllers/notificationController");
+
+// GET all notifications for current user
+router.get("/", auth, getNotifications);
+
+// PUT mark as read
+router.put("/:id/read", auth, markAsRead);
+
+// DELETE notification
+router.delete("/:id", auth, deleteNotification);
+
+// POST create notification (optional/test use)
+router.post("/", auth, createNotification);
 
 module.exports = router;

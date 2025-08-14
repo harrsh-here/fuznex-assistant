@@ -12,9 +12,9 @@ const Alarm = sequelize.define('alarms', {
     allowNull: true, // Set according to your DB; adjust if needed.
   },
   alarm_time: {
-    type: DataTypes.DATE,
+    type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
+    
   },
   label: {
     type: DataTypes.STRING,

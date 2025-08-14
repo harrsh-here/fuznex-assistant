@@ -1,7 +1,5 @@
-// src/features/Auth/LoginSignupScreen.jsx
 import React, { useState } from "react";
-import { GoogleLogo, WindowsLogo, Eye, EyeSlash } from "phosphor-react";
-import bgImage from "../../assets/background.png";
+import { GoogleLogo, Eye, EyeSlash } from "phosphor-react";
 import api from "../../api/api";
 
 export default function LoginSignupScreen({ onLogin, onRegister }) {
@@ -14,6 +12,16 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [oauthLoading, setOauthLoading] = useState(false);
+
+const inputClass = `w-full bg-white/10 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 
+focus:ring-2 focus:ring-purple-500 focus:bg-white/5 transition duration-300 
+focus:scale-[1.03] focus:shadow-[0_0_0_3px_rgba(139,92,246,0.2)] focus:z-10`;
+
+  const handleGoogleLogin = () => {
+    setOauthLoading(true);
+    window.location.href = "https://fuznex.onrender.com/api/auth/google";
+  };
 
   const submit = async () => {
     setLoading(true);
@@ -22,9 +30,15 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
       if (mode === "signup") {
         if (password !== password2) {
           setError("Passwords must match");
+          setLoading(false);
           return;
         }
-        const { data } = await api.post("/users/register", { name, phone_number: phone, email, password });
+        const { data } = await api.post("/users/register", {
+          name,
+          phone_number: phone,
+          email,
+          password,
+        });
         localStorage.setItem("token", data.token);
         localStorage.setItem("refreshToken", data.refreshToken);
         onRegister(data.user);
@@ -43,16 +57,16 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
   };
 
   return (
-    <div
-      className="absolute inset-0 flex items-center justify-center font-sans px-4 py-8"
-      style={{
-        backgroundImage: `url(${bgImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-     <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg bg-transparent backdrop-blur-xl border border-purple-500 rounded-3xl p-6 xs:p-5 space-y-1 shadow-0xl">
-
+    <div className="min-h-screen w-full bg-[radial-gradient(ellipse_at_center,_rgba(168,85,247,0.01)_90%,_rgba(128,90,213,0.07)_99%,_transparent_90%)] flex items-center justify-center font-sans px-4 py-8 relative overflow-hidden">
+      
+      {/* Background decorative elements */}
+      <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-transparent via-purple-600 to-transparent" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_rgba(255,255,255,0.03)_0%,_rgba(128,90,213,0.1)_40%,_transparent_100%)]" />
+      
+      {/* Main card container */}
+      <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl bg-white/10 backdrop-blur-xl 
+rounded-3xl p-6 space-y-3 shadow-2xl border border-violet-500/20 transition-all duration-500 z-10 bottom-10" >
+          
         {/* Notch */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-1 bg-purple-500 rounded-b-md" />
 
@@ -62,74 +76,82 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
           <h1 className="text-white text-3xl font-bold">FuzNex Assistant</h1>
         </div>
 
-        {/* Mode Toggle */}
-        <div className="flex items-center justify-center border-b border-gray-700 pb-2">
-          {['login', 'signup'].map((m) => (
+        {/* Toggle Tabs with glassmorphic + animation */}
+        <div className="flex items-center justify-center border-b border-gray-700 pb-2 transition-all">
+          {["login", "signup"].map((m) => (
             <button
               key={m}
-              onClick={() => { setMode(m); setError(''); }}
-              className={`mx-2 px-6 py-2 text-lg font-semibold transition border-b-2 ${
-                mode === m ? 'text-purple-400 border-purple-400' : 'text-gray-400 border-transparent'
+              onClick={() => {
+                setMode(m);
+                setError("");
+              }}
+              className={`mx-2 px-6 py-2 text-lg font-semibold transition-all duration-300 rounded-md backdrop-blur-md ${
+                mode === m
+                  ? "bg-purple-900/20 text-purple-200 border-b-2 border-purple-400"
+                  : "text-gray-400  hover:text-white"
               }`}
             >
-              {m === 'login' ? 'Login' : 'Sign Up'}
+              {m === "login" ? "Login" : "Sign Up"}
             </button>
           ))}
         </div>
 
         {/* Form */}
         <div className="space-y-2">
-          {mode === 'signup' && (
+          {mode === "signup" && (
             <>
               <input
                 type="text"
                 placeholder="Your Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white/10 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:bg-white/5 transition"
+                 className={inputClass}
               />
               <input
                 type="text"
                 placeholder="Phone Number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-white/10 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:bg-white/5 transition"
-              />
+                     className={inputClass}              />
             </>
           )}
           <input
             type="email"
-            placeholder="you@example.com"
+            placeholder="you@example.com" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-white/10 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:bg-white/5 transition"
-          />
+            className={inputClass}          />
           <div className="relative">
             <input
-              type={showPass ? 'text' : 'password'}
+              type={showPass ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/10 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:bg-white/5 transition"
+               className={inputClass}
             />
-            <button onClick={() => setShowPass(!showPass)} className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400" type="button">
+            <button
+              onClick={() => setShowPass(!showPass)}
+              className="absolute top-1/2 right-4 -translate-y-1/4 text-gray-400 bg-transparent border-0 hover:scale-105 hover:text-indigo-200"
+              type="button"
+            >
               {showPass ? <EyeSlash size={22} /> : <Eye size={22} />}
             </button>
           </div>
-          {mode === 'login' && (
+          {/*
+          {mode === "login" && (
             <div className="mt-1 text-left">
               <button className="text-xs font-medium underline text-gray-400 hover:text-white transition bg-transparent focus:outline-none">
                 Forgot password?
               </button>
             </div>
-          )}
-          {mode === 'signup' && (
+          )} */}
+          {mode === "signup" && (
             <input
               type="password"
               placeholder="Confirm Password"
               value={password2}
               onChange={(e) => setPassword2(e.target.value)}
-              className="w-full bg-white/10 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:bg-white/1 transition"
+               className={inputClass}
             />
           )}
         </div>
@@ -137,34 +159,26 @@ export default function LoginSignupScreen({ onLogin, onRegister }) {
         {/* Error */}
         {error && <div className="text-red-400 text-sm text-center">{error}</div>}
 
-        {/* Submit */}
+        {/* Submit Button with glassmorphic look */}
         <button
           onClick={submit}
           disabled={loading}
-          className="w-full h-12 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white font-bold rounded-lg text-lg transition"
+          className="w-full h-12 bg-purple-700/60 backdrop-blur-md hover:bg-purple-900 disabled:opacity-50 text-white font-bold rounded-lg text-lg transition border border-indigo-700/100 "
         >
-          {loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create Account'}
+          {loading ? "Please wait..." : mode === "login" ? "Login" : "Create Account"}
         </button>
 
         {/* OAuth */}
         <div className="space-y-3">
-          <button onClick={() => onLogin({ oauth: 'google' })} className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium">
-            <GoogleLogo size={22} /> Continue with Google
-          </button>
-          <button onClick={() => onLogin({ oauth: 'microsoft' })} className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-base font-medium">
-            <WindowsLogo size={22} /> Continue with Microsoft
+          <button
+            onClick={handleGoogleLogin}
+            disabled={oauthLoading}
+            className="w-full h-12 bg-white text-gray-800 flex items-center justify-center gap-3 rounded-lg border border-gray-300 hover:bg-gray-200 transition text-base font-medium"
+          >
+            <GoogleLogo size={22} />
+            {oauthLoading ? "Redirecting..." : "Continue with Google"}
           </button>
         </div>
-
-        {/* Footer */}
-        {mode === 'signup' && (
-          <div className="text-center text-sm text-gray-400">
-            <p>
-              By signing up you agree to our{' '}
-              <button className="underline hover:text-white transition">Terms & Privacy</button>
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

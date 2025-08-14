@@ -20,6 +20,11 @@ const UserHistory = sequelize.define('UserHistory', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  type: {
+    type: DataTypes.ENUM('chat', 'todo', 'alarm','system'),
+    allowNull: false,
+    defaultValue: 'chat',
+  },
   timestamp: {
     type: DataTypes.DATE,
     allowNull: true,

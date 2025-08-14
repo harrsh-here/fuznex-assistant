@@ -1,5 +1,9 @@
 const Subtask = require('../models/Subtask');
 const TodoTask = require('../models/TodoTask');
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const Notification = require('../models/Notifications')(sequelize, DataTypes); // ✅ correct
+
 
 // Create subtask only if the task belongs to the user
 exports.createSubtask = async (req, res) => {
@@ -11,6 +15,14 @@ exports.createSubtask = async (req, res) => {
     if (!task) return res.status(403).json({ error: 'Access denied. Task does not belong to you.' });
 
     const subtask = await Subtask.create({ task_id, title });
+await Notification.create({
+  user_id: req.user.id,
+  subtask_id: newSubtask.subtask_id,
+  title: "Subtask Added",
+  message: `Subtask for "${parentTask.title}" has been created.`,
+  is_important: false,
+});
+   
     res.status(201).json({ message: 'Subtask created', subtask });
   } catch (err) {
     console.error('createSubtask error:', err);

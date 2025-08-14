@@ -49,3 +49,37 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+/* app.css */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.scrollable:hover::-webkit-scrollbar-thumb {
+  background-color: #55555555; /* subtle on hover */
+}
+/* Hide scrollbar cross-browser */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(10px); }
+}
+.animate-fadeInOut {
+  animation: fadeInOut 2.5s ease-in-out;
+}
